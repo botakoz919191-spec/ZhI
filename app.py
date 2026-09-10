@@ -30,7 +30,7 @@ st.title("🛡️ CyberShield KZ — ЖИ Талдау және КИБЕРҚОР
 # ---------------------------------------------------------
 
 def analyze_image_sightengine(image_bytes):
-    """Sightengine API арқылы ЖИ генерациясын тексеру"""
+    """Sightengine API арқылы визуалды ЖИ генерациясын тексеру"""
     url = 'https://api.sightengine.com/1.0/check.json'
     params = {'models': 'genai', 'api_user': SIGHTENGINE_USER, 'api_secret': SIGHTENGINE_SECRET}
     files = {'media': image_bytes}
@@ -48,7 +48,7 @@ def analyze_image_sightengine(image_bytes):
 
 
 def analyze_with_gemini_vision(pil_img):
-    """Gemini Vision арқылы Барлық ЖИ генераторларының белгілерін тексеру"""
+    """Мәтіндік тапсырмаларды, скриншоттарды және фото/видеоны ЖИ (ChatGPT, Deepfake т.б.) белгілеріне ҚАТАҢ тексеру"""
     try:
         if not GEMINI_KEY:
             return 0.0, ""
@@ -56,12 +56,15 @@ def analyze_with_gemini_vision(pil_img):
         model = genai.GenerativeModel('gemini-3.6-flash')
         
         prompt = (
-            "Осы суретті/кадрды ӨТЕ МҰҚИЯТ ЖӘНЕ ТЕРЕҢДЕТІП ТАЛДА. "
-            "Бұл медиа файлы Жасанды Интеллект (ЖИ / AI / Deepfake) арқылы жасалған ба? "
-            "(D-ID, HeyGen, Midjourney, Stable Diffusion, DALL-E, FaceFusion, Runway, Sora т.б.). "
-            "Су таңбаларын (водяной марка), бет-әлпет пен артефакттарды тексере отырып, ТЕК МЫНА ФОРМАТТА жауап бер:\n"
-            "SCORE: [0-100 аралығындағы сан]\n"
-            "REASON: [Анықталған ЖИ сервисінің атауы және белгілері]"
+            "Осы суретті немесе тапсырма материалын МҰҚИЯТ ЖӘНЕ ӨТЕ ҚАТАҢ ТАЛДА.\n"
+            "Егер бұл МӘТІН/ТАПСЫРМА/СКРИНШОТ болса, оның ChatGPT, Gemini, Claude сияқты ЖИ арқылы жасалған-жасалмағанын мына белгілермен тексер:\n"
+            "1. Сөйлемдердің тым біркелкі, тегіс, академиялық құрылымы;\n"
+            "2. ChatGPT-ге тән сөз тіркестері ('қорытындылай келе', 'маңызды рөл атқарады', 'атап өткен жөн', 'сонымен қатар');\n"
+            "3. Тізімдер мен пункттердің ЖИ форматында реттелуі.\n\n"
+            "Егер бұл ФОТО/ВИДЕО кадры болса, оның D-ID, Midjourney, HeyGen, Deepfake арқылы бұрмаланғанын тексер.\n\n"
+            "Жауапты ТЕК МЫНА ФОРМАТТА БЕР (басқа артық сөз жазба):\n"
+            "SCORE: [0-100 аралығындағы ЖИ ықтималдығының саны]\n"
+            "REASON: [Анықталған ЖИ (ChatGPT немесе басқа ЖИ) белгілері мен дәлелдерінің нақты сипаттамасы]"
         )
         
         res = model.generate_content([prompt, pil_img])
@@ -80,27 +83,56 @@ def analyze_with_gemini_vision(pil_img):
         return 0.0, ""
 
 
-def get_custom_legal_advice_gemini_with_pil(pil_img, media_type="сурет", reason_text=""):
-    """СЮЖЕТКЕ ЖӘНЕ МАЗМҰНҒА НЕГІЗДЕЛГЕН ТОЛЫҚ ЗАҢГЕРЛІК КЕҢЕС"""
+def analyze_text_chatgpt(text_content):
+    """Жазбаша мәтінді ChatGPT/ЖИ генерациясына ҚАТАҢ ДЕТЕКЦИЯЛАУ"""
     try:
         if not GEMINI_KEY:
-            return "Gemini API кілті орнатылмаған. Streamlit Secrets бөлімін тексеріңіз."
+            return 0.0, ""
+        genai.configure(api_key=GEMINI_KEY)
+        model = genai.GenerativeModel('gemini-3.6-flash')
+        
+        prompt = (
+            f"Мына мәтінді МҰҚИЯТ САКТАП ТАЛДА:\n\n\"{text_content}\"\n\n"
+            "Бұл мәтінді ChatGPT немесе өзге ЖИ (AI) жазған ба? "
+            "ЖИ-ге тән сөз оралымдарын, стилистикасын, грамматикалық шаблонды тексер. "
+            "Кішкене болсын ЖИ издері болса, оны төмен бағалама, нақты көрсет.\n"
+            "Жауапты ТЕК МЫНА ФОРМАТТА бер:\n"
+            "SCORE: [0-100 аралығындағы сан]\n"
+            "REASON: [ЖИ-ге тән анықталған сөздер мен дәлелдер сипаттамасы]"
+        )
+        
+        res = model.generate_content(prompt)
+        text = res.text
+        
+        score = 0.0
+        reason = ""
+        if "SCORE:" in text:
+            score_str = text.split("SCORE:")[1].split("\n")[0].strip()
+            score = float(''.join(c for c in score_str if c.isdigit() or c=='.'))
+        if "REASON:" in text:
+            reason = text.split("REASON:")[1].strip()
+            
+        return score, reason
+    except Exception as e:
+        return 0.0, str(e)
+
+
+def get_custom_legal_advice_gemini_with_pil(pil_img, media_type="сурет", reason_text=""):
+    """Сюжетке және бұрмалауға негізделген заңгерлік кеңес"""
+    try:
+        if not GEMINI_KEY:
+            return "Gemini API кілті орнатылмаған."
 
         genai.configure(api_key=GEMINI_KEY)
         model = genai.GenerativeModel('gemini-3.6-flash')
         
         prompt = (
-            f"Осы жүктелген {media_type} материалында Жасанды Интеллект (Deepfake / AI) қолданылғаны анықталды. "
-            f"Анықталған ЖИ белгілері: {reason_text}.\n\n"
-            "ТАПСЫРМА:\n"
-            "1. Суреттегі/видеодағы СЮЖЕТТІ МҰҚИЯТ ТАЛДАҢЫЗ (Кімдер бейнеленген, қандай оқиға/әрекет өтіп жатыр, мазмұны не туралы?).\n"
-            "2. ДӘЛ ОСЫ СЮЖЕТ пен АДАМДАРДЫҢ Бейнесін бұрмалау негізінде Қазақстан Республикасының заңнамасына "
-            "(ҚР АК 143-бап - Ар-намыс пен абырой, 145-бап - Суретке құқық; ҚР ҚК 147-бап - Жеке өмірге қолсуғылмаушылық, 194-бап - Бопсалау, 190-бап - Алаяқтық; ӘҚБтК 456-2-бап - Жалған ақпарат тарату) "
-            "сүйене отырып, ТОЛЫҚ ӘРІ НАҚТЫ ЗАҢГЕРЛІК ҚОРЫТЫНДЫ БЕРІҢІЗ:\n\n"
-            "Жауап форматы мынадай бөлімдерден тұруы тиіс:\n"
-            "📌 **1. Сюжет пен оқиға мазмұнын талдау:** (Кадрда не бейнеленген және қандай заңсыз әрекет көрініс тапқан?)\n"
-            "⚖️ **2. Бұзылған құқықтар мен ҚР Заңнамасының баптары:** (Қай баптар бойынша жауапкершілік қарастырылған?)\n"
-            "📝 **3. Құқық қорғау органдарына (CyberPol / Сот) шағымдану қадамдары:** (Не істеу керек, қандай сараптамалар тағайындалады және қандай айғақ-дәлел жинау қажет?)"
+            f"Жүктелген {media_type} материалында ЖИ белгілері анықталды: {reason_text}.\n\n"
+            "Осы материалдың сюжеті мен мазмұнына сүйеніп, ҚР Заңнамасы (ҚР АК 143, 145; ҚР ҚК 147, 190, 194; ӘҚБтК 456-2) "
+            "бойынша заңгерлік қорытынды беріңіз:\n"
+            "1. Сюжет пен заңсыз әрекет мазмұны;\n"
+            "2. Бұзылған құқықтар мен заң баптары;\n"
+            "3. Шағымдану қадамдары мен дәлелдер жинау."
         )
 
         response = model.generate_content([prompt, pil_img])
@@ -110,7 +142,7 @@ def get_custom_legal_advice_gemini_with_pil(pil_img, media_type="сурет", re
 
 
 def analyze_video_sightengine(video_bytes):
-    """Видеоның бүкіл бойын сканерлеп, кадр сюжетін тексеру"""
+    """Видеоны тексеру"""
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_file:
             tmp_file.write(video_bytes)
@@ -136,7 +168,7 @@ def analyze_video_sightengine(video_bytes):
         cap.release()
 
         if not extracted_frames:
-            return {"success": False, "error": "Видеодан сапалы кадр алу мүмкін болмады", "frame_pil": None, "reason": ""}
+            return {"success": False, "error": "Кадр алу мүмкін болмады", "frame_pil": None, "reason": ""}
 
         max_score = 0.0
         best_pil_img = None
@@ -159,9 +191,6 @@ def analyze_video_sightengine(video_bytes):
                 best_pil_img = pil_img
                 best_reason = reason2
 
-        if max_score > 35:
-            max_score = max(max_score, 99.0)
-
         return {
             "success": True,
             "percentage": round(max_score, 2),
@@ -174,18 +203,18 @@ def analyze_video_sightengine(video_bytes):
 # ---------------------------------------------------------
 # 3. Бет интерфейсі
 # ---------------------------------------------------------
-tab1, tab2 = st.tabs(["🖼️ / 🎥 Медианы ЖИ-ге талдау", "💬 ЖИ Заңгер Консультант"])
+tab1, tab2, tab3 = st.tabs(["🖼️ / 🎥 Медиа сараптама", "📝 Мәтіндік Тапсырмаларды (ChatGPT) Тексеру", "💬 ЖИ Заңгер Консультант"])
 
 with tab1:
     st.subheader("🖼️ Фотосурет немесе 🎥 Видеоны ЖИ мен Сюжетке Тексеру")
-    media_type = st.radio("Медиа типін таңдаңыз:", ["Фотосурет (JPG, PNG)", "Видеофайл (MP4, MOV)"])
+    media_type = st.radio("Медиа типін таңдаңыз:", ["Фотосурет / Скриншот (JPG, PNG)", "Видеофайл (MP4, MOV)"])
     
-    if media_type == "Фотосурет (JPG, PNG)":
-        uploaded_file = st.file_uploader("Суретті жүктеңіз", type=["jpg", "jpeg", "png"])
+    if media_type == "Фотосурет / Скриншот (JPG, PNG)":
+        uploaded_file = st.file_uploader("Суретті немесе тапсырма скриншотын жүктеңіз", type=["jpg", "jpeg", "png"])
         if uploaded_file:
             st.image(uploaded_file, caption="Жүктелген сурет", use_container_width=True)
-            if st.button("🔍 Сурет пен Сюжетті Талдау"):
-                with st.spinner("Фотосуреттің ЖИ белгілері мен СЮЖЕТІ толық сарапталуда..."):
+            if st.button("🔍 Толық Қатаң Талдау Жасау"):
+                with st.spinner("Сурет/Скриншот ЖИ белгілеріне (ChatGPT, D-ID, Midjourney т.б.) терең тексерілуде..."):
                     pil_img = Image.open(uploaded_file)
                     
                     res = analyze_image_sightengine(uploaded_file.getvalue())
@@ -193,29 +222,27 @@ with tab1:
                     score2, reason = analyze_with_gemini_vision(pil_img)
                     
                     pct = max(score1, score2)
-                    if pct > 35:
-                        pct = max(pct, 99.0)
 
-                    st.markdown(f"### 📊 Суреттегі ЖИ (Deepfake/AI) ықтималдығы: **{pct}%**")
+                    st.markdown(f"### 📊 ЖИ (AI/ChatGPT/Deepfake) ықтималдығы: **{pct}%**")
                     if reason:
-                        st.info(f"🔍 **Сараптама қорытындысы:**\n\n{reason}")
+                        st.info(f"🔍 **Сараптама қорытындысы мен анықталған белгілер:**\n\n{reason}")
                     
-                    if pct > 50:
-                        st.error("🚨 ЕСКЕРТУ: Бұл фотосуретте Жасанды Интеллект (ЖИ / AI / Deepfake) арқылы жасалған бұрмалаушылық анықталды!")
+                    if pct > 40:
+                        st.error("🚨 ЕСКЕРТУ: Осы материалда Жасанды Интеллект (ChatGPT немесе ЖИ-генератор) іздері анықталды!")
                         st.markdown("---")
-                        st.subheader("⚖️ Сюжет Негізіндегі Заңгерлік Кеңес (ҚР Заңнамасы)")
-                        with st.spinner("Сурет сюжеті талданып, заңгерлік қорытынды дайындалуда..."):
+                        st.subheader("⚖️ Заңгерлік Кеңес")
+                        with st.spinner("Сюжет пен мазмұны талдануда..."):
                             advice = get_custom_legal_advice_gemini_with_pil(pil_img, "сурет", reason)
                             st.info(advice)
                     else:
-                        st.success("✅ Сурет таза немесе ЖИ белгілері анықталмады.")
+                        st.success("✅ ЖИ белгілері анықталмады немесе материал табиғи.")
 
     else:
         uploaded_video = st.file_uploader("Видеоны жүктеңіз", type=["mp4", "mov"])
         if uploaded_video:
             st.video(uploaded_video)
-            if st.button("🎥 Видео мен Сюжетті Талдау"):
-                with st.spinner("Видеоның бүкіл кадрлары мен СЮЖЕТІ толығымен сканерленуде..."):
+            if st.button("🎥 Видеоны Талдау"):
+                with st.spinner("Видео кадрлары сканерленуде..."):
                     res = analyze_video_sightengine(uploaded_video.getvalue())
                     if res["success"]:
                         pct = res["percentage"]
@@ -224,11 +251,11 @@ with tab1:
                         if reason:
                             st.info(f"🔍 **Сараптама қорытындысы:**\n\n{reason}")
                         
-                        if pct > 50:
-                            st.error("🚨 ЕСКЕРТУ: Видеода Жасанды Интеллект (Deepfake / AI) белгілері бар!")
+                        if pct > 40:
+                            st.error("🚨 ЕСКЕРТУ: Видеода ЖИ белгілері бар!")
                             st.markdown("---")
-                            st.subheader("⚖️ Видео Сюжеті Негізіндегі Заңгерлік Кеңес (ҚР Заңнамасы)")
-                            with st.spinner("Видео сюжеті мен кадрлары талданып, заңгерлік кеңес құрастырылуда..."):
+                            st.subheader("⚖️ Заңгерлік Кеңес")
+                            with st.spinner("Талдануда..."):
                                 advice = get_custom_legal_advice_gemini_with_pil(res["frame_pil"], "видео", reason)
                                 st.info(advice)
                         else:
@@ -237,6 +264,26 @@ with tab1:
                         st.error(f"Қате: {res['error']}")
 
 with tab2:
+    st.subheader("📝 Сабақ тапсырмаларының мәтінін ChatGPT-ге тексеру")
+    st.write("Төменге сабақ тапсырмасының мәтінін көшіріп қойыңыз (Copy/Paste):")
+    text_input = st.text_area("Тапсырма мәтінін осында енгізіңіз:", height=200)
+    
+    if st.button("🔍 Мәтінді ChatGPT-ге Тексеру"):
+        if text_input.strip():
+            with st.spinner("Мәтіннің құрылымы, стилі мен ChatGPT белгілері қатаң сарапталуда..."):
+                pct, reason = analyze_text_chatgpt(text_input)
+                st.markdown(f"### 📊 Мәтіннің ЖИ (ChatGPT) арқылы жазылу ықтималдығы: **{pct}%**")
+                if reason:
+                    st.info(f"🔍 **Анықталған дәлелдер мен талдау:**\n\n{reason}")
+                
+                if pct > 40:
+                    st.error("🚨 Бұл тапсырма мәтіні Жасанды Интеллект (ChatGPT / Claude / Gemini) арқылы жазылған!")
+                else:
+                    st.success("✅ Мәтін адам тарапынан жазылғанға ұқсайды (ЖИ белгілері минималды).")
+        else:
+            st.warning("Өтініш, тексеру үшін мәтінді енгізіңіз.")
+
+with tab3:
     st.subheader("💬 Онлайн ЖИ Заңгер Консультант (Gemini)")
     if "messages" not in st.session_state:
         st.session_state.messages = []
