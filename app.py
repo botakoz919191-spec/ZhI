@@ -6,7 +6,7 @@ import cv2
 import google.generativeai as genai
 
 # =========================================================
-# 🗝️ API КІЛТТЕРІ (Streamlit Secrets арқылы қауіпсіз оқылады)
+# 🗝️ API КІЛТТЕРІ (Streamlit Secrets арқылы оқылады)
 # =========================================================
 SIGHTENGINE_USER = st.secrets.get("SIGHTENGINE_USER", "1282198950")
 SIGHTENGINE_SECRET = st.secrets.get("SIGHTENGINE_SECRET", "VFvoLLmm7Z97MU95LddGTbuNrhhYuZng")
@@ -51,7 +51,8 @@ def get_custom_legal_advice_gemini(media_type):
             return "Gemini API кілті орнатылмаған. Streamlit Secrets бөлімін тексеріңіз."
 
         genai.configure(api_key=GEMINI_KEY)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Ең соңғы жаңа модель ге ауыстырылды
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         prompt = (
             f"Жүктелген {media_type} арқылы ЖИ (Deepfake) анықталды. "
@@ -162,7 +163,7 @@ with tab2:
                         st.error("Gemini API кілті бапталмаған.")
                     else:
                         genai.configure(api_key=GEMINI_KEY)
-                        model = genai.GenerativeModel('gemini-1.5-flash')
+                        model = genai.GenerativeModel('gemini-2.5-flash')
                         
                         full_prompt = "Сіз ҚР киберқылмыс және Азаматтық/Қылмыстық заңдары бойынша білікті ЖИ Заңгерсіз. Қазақ тілінде жауап беріңіз.\n" + user_input
                         response = model.generate_content(full_prompt)
