@@ -3,10 +3,10 @@ import requests
 import json
 import tempfile
 import cv2
-from google import genai
+import google.generativeai as genai
 
 # =========================================================
-# 🗝️ API КІЛТТЕРІ (Тек Secrets арқылы оқылады)
+# 🗝️ API КІЛТТЕРІ (Streamlit Secrets арқылы қауіпсіз оқылады)
 # =========================================================
 SIGHTENGINE_USER = st.secrets.get("SIGHTENGINE_USER", "1282198950")
 SIGHTENGINE_SECRET = st.secrets.get("SIGHTENGINE_SECRET", "VFvoLLmm7Z97MU95LddGTbuNrhhYuZng")
@@ -45,11 +45,13 @@ def analyze_image_sightengine(image_bytes):
 
 
 def get_custom_legal_advice_gemini(media_type):
+    """Google Gemini арқылы тегін заңгерлік кеңес алу"""
     try:
         if not GEMINI_KEY:
             return "Gemini API кілті орнатылмаған. Streamlit Secrets бөлімін тексеріңіз."
 
-        client = genai.Client(api_key=GEMINI_KEY)
+        genai.configure(api_key=GEMINI_KEY)
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
         prompt = (
             f"Жүктелген {media_type} арқылы ЖИ (Deepfake) анықталды. "
@@ -59,10 +61,7 @@ def get_custom_legal_advice_gemini(media_type):
             "2. Азамат полицияға (CyberPol) және сотқа шағымдану үшін не істеуі керек?"
         )
 
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-        )
+        response = model.generate_content(prompt)
         return response.text
     except Exception as e:
         return f"Gemini API қатесі: {str(e)}"
@@ -162,12 +161,11 @@ with tab2:
                     if not GEMINI_KEY:
                         st.error("Gemini API кілті бапталмаған.")
                     else:
-                        client = genai.Client(api_key=GEMINI_KEY)
+                        genai.configure(api_key=GEMINI_KEY)
+                        model = genai.GenerativeModel('gemini-1.5-flash')
+                        
                         full_prompt = "Сіз ҚР киберқылмыс және Азаматтық/Қылмыстық заңдары бойынша білікті ЖИ Заңгерсіз. Қазақ тілінде жауап беріңіз.\n" + user_input
-                        response = client.models.generate_content(
-                            model='gemini-2.5-flash',
-                            contents=full_prompt,
-                        )
+                        response = model.generate_content(full_prompt)
                         reply = response.text
                         st.write(reply)
                         st.session_state.messages.append({"role": "assistant", "content": reply})
