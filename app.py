@@ -3,14 +3,14 @@ import requests
 import json
 import tempfile
 import cv2
-import openai
+from google import genai
 
 # =========================================================
-# 🗝️ ҚАУІПСІЗ API КІЛТТЕРІ (Secrets арқылы оқылады)
+# 🗝️ API КІЛТТЕРІ (Тек Secrets арқылы оқылады)
 # =========================================================
 SIGHTENGINE_USER = st.secrets.get("SIGHTENGINE_USER", "1282198950")
 SIGHTENGINE_SECRET = st.secrets.get("SIGHTENGINE_SECRET", "VFvoLLmm7Z97MU95LddGTbuNrhhYuZng")
-OPENAI_KEY = st.secrets.get("OPENAI_KEY", "")
+GEMINI_KEY = st.secrets.get("GEMINI_KEY", "")
 
 # ---------------------------------------------------------
 # 1. Бет параметрлері
@@ -44,33 +44,28 @@ def analyze_image_sightengine(image_bytes):
         return {"success": False, "error": str(e)}
 
 
-def get_custom_legal_advice(media_type):
-    """OpenAI арқылы ASCII/UTF-8 қатесінсіз кеңес алу"""
+def get_custom_legal_advice_gemini(media_type):
     try:
-        if not OPENAI_KEY:
-            return "OpenAI API кілті табулы емес. Secrets бөлімін тексеріңіз."
-            
-        client = openai.OpenAI(api_key=OPENAI_KEY)
+        if not GEMINI_KEY:
+            return "Gemini API кілті орнатылмаған. Streamlit Secrets бөлімін тексеріңіз."
+
+        client = genai.Client(api_key=GEMINI_KEY)
         
-        system_prompt = "You are a legal advisor for Kazakhstan law."
-        user_prompt = (
-            f"Analyzed file type: {media_type}. AI Deepfake detection confidence is higher than 50%. "
-            "Provide legal consultation in Kazakh language based on the legislation of the Republic of Kazakhstan "
-            "(Civil Code Articles 143, 145, Criminal Code Articles 147, 194, Administrative Code Article 456-2). "
-            "Explain what laws were violated and detail step-by-step instructions on filing a complaint to CyberPol."
+        prompt = (
+            f"Жүктелген {media_type} арқылы ЖИ (Deepfake) анықталды. "
+            "Қазақстан Республикасының заңнамасына (ҚР АК 143, 145-баптары, ҚР ҚК 147, 194-баптары, ӘҚБтК 456-2) "
+            "сүйене отырып, мына сұрақтарға заңгерлік жауап беріңіз:\n"
+            "1. Бұл жағдайда қандай құқықтар бұзылған?\n"
+            "2. Азамат полицияға (CyberPol) және сотқа шағымдану үшін не істеуі керек?"
         )
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.3
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
         )
-        return response.choices[0].message.content
+        return response.text
     except Exception as e:
-        return f"OpenAI қатесі: {str(e)}"
+        return f"Gemini API қатесі: {str(e)}"
 
 
 def analyze_video_sightengine(video_bytes):
@@ -114,9 +109,9 @@ with tab1:
                         if pct > 50:
                             st.error("🚨 ЕСКЕРТУ: Бұл суретте Жасанды Интеллект (Deepfake) белгілері бар!")
                             st.markdown("---")
-                            st.subheader("⚖️ OpenAI ЖИ Арнайы Заңгерлік Консультациясы")
+                            st.subheader("⚖️ Google Gemini Заңгерлік Консультациясы")
                             with st.spinner("Заңгерлік кеңес құрастырылуда..."):
-                                advice = get_custom_legal_advice("Photo Image")
+                                advice = get_custom_legal_advice_gemini("сурет")
                                 st.info(advice)
                         else:
                             st.success("✅ Сурет таза немесе ЖИ белгілері анықталмады.")
@@ -137,9 +132,9 @@ with tab1:
                         if pct > 50:
                             st.error("🚨 ЕСКЕРТУ: Видеода Жасанды Интеллект (Deepfake) белгілері бар!")
                             st.markdown("---")
-                            st.subheader("⚖️ OpenAI ЖИ Арнайы Заңгерлік Консультациясы")
+                            st.subheader("⚖️ Google Gemini Заңгерлік Консультациясы")
                             with st.spinner("Заңгерлік кеңес құрастырылуда..."):
-                                advice = get_custom_legal_advice("Video File")
+                                advice = get_custom_legal_advice_gemini("видео")
                                 st.info(advice)
                         else:
                             st.success("✅ Видео таза немесе ЖИ белгілері анықталмады.")
@@ -147,7 +142,7 @@ with tab1:
                         st.error(f"Қате: {res['error']}")
 
 with tab2:
-    st.subheader("💬 Онлайн ЖИ Заңгер Консультант")
+    st.subheader("💬 Онлайн ЖИ Заңгер Консультант (Gemini)")
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
@@ -164,17 +159,17 @@ with tab2:
         with st.chat_message("assistant"):
             with st.spinner("Талдануда..."):
                 try:
-                    client = openai.OpenAI(api_key=OPENAI_KEY)
-                    response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[
-                            {"role": "system", "content": "You are a legal assistant for Kazakhstan law. Answer in Kazakh language."},
-                            *st.session_state.messages
-                        ],
-                        temperature=0.3
-                    )
-                    reply = response.choices[0].message.content
-                    st.write(reply)
-                    st.session_state.messages.append({"role": "assistant", "content": reply})
+                    if not GEMINI_KEY:
+                        st.error("Gemini API кілті бапталмаған.")
+                    else:
+                        client = genai.Client(api_key=GEMINI_KEY)
+                        full_prompt = "Сіз ҚР киберқылмыс және Азаматтық/Қылмыстық заңдары бойынша білікті ЖИ Заңгерсіз. Қазақ тілінде жауап беріңіз.\n" + user_input
+                        response = client.models.generate_content(
+                            model='gemini-2.5-flash',
+                            contents=full_prompt,
+                        )
+                        reply = response.text
+                        st.write(reply)
+                        st.session_state.messages.append({"role": "assistant", "content": reply})
                 except Exception as e:
-                    st.error(f"OpenAI қатесі: {str(e)}")
+                    st.error(f"Gemini қатесі: {str(e)}")
