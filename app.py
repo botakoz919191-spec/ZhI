@@ -11,7 +11,7 @@ import openai
 SIGHTENGINE_USER = "1282198950"
 SIGHTENGINE_SECRET = "VFvoLLmm7Z97MU95LddGTbuNrhhYuZng"
 SERPAPI_KEY = "d7ae383bc732173b646bbc2fefa6ec5080a28bb63eb43030c25f739c542552e8"
-OPENAI_KEY = "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"
+OPENAI_KEY = st.secrets["OPENAI_KEY"]
 
 # ---------------------------------------------------------
 # 1. Бет параметрлері
