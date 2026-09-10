@@ -45,29 +45,25 @@ def analyze_image_sightengine(image_bytes):
         return {"success": False, "error": str(e)}
 
 
-def get_custom_legal_advice_gemini_with_image(image_file, media_type="сурет"):
-    """Google Gemini арқылы СУРЕТТІҢ МАЗМҰНЫН көріп, нақты заңгерлік кеңес беру"""
+def get_custom_legal_advice_gemini_with_pil(pil_img, media_type="сурет"):
+    """Google Gemini арқылы PIL Суретінің мазмұнын талдап, заңгерлік кеңес беру"""
     try:
         if not GEMINI_KEY:
             return "Gemini API кілті орнатылмаған. Streamlit Secrets бөлімін тексеріңіз."
 
         genai.configure(api_key=GEMINI_KEY)
         model = genai.GenerativeModel('gemini-3.6-flash')
-
-        # Суретті Gemini танитындай форматқа айналдыру
-        img = Image.open(image_file)
         
         prompt = (
-            f"Осы жүктелген {media_type} жүйе арқылы талданып, ЖИ (Deepfake) ықтималдығы жоғары екені анықталды. "
-            "Суреттің МАЗМҰНЫНА (кім бейнеленген: бала, ересек адам, танымал тұлға, қандай жағдай, т.б.) ТІКЕЛЕЙ НАЗАР АУДАРЫП, "
+            f"Жүктелген {media_type} арқылы ЖИ (Deepfake) анықталды. "
+            "Көрініс/сурет МАЗМҰНЫНА (кім бейнеленген, қандай жағдай, т.б.) ТІКЕЛЕЙ НАЗАР АУДАРЫП, "
             "Қазақстан Республикасының заңнамасына (ҚР АК 143, 145-баптары, ҚР ҚК 147, 194-баптары, ӘҚБтК 456-2) "
-            "сүйене отырып, мына сұрақтарға ЖАТТАНДЫ ЕМЕС, дәл осы суреттегі жағдайға байланысты нақты заңгерлік жауап беріңіз:\n"
-            "1. Суретте кім/не бейнеленген және дәл осы жағдайда азаматтың қандай жеке немесе заңды құқықтары бұзылып тұр?\n"
+            "сүйене отырып, мына сұрақтарға ДӘЛ ОСЫ МАЗМҰНҒА ЛАЙЫҚТЫ нақты заңгерлік жауап беріңіз:\n"
+            "1. Суретте/кадрда кім/не бейнеленген және дәл осы жағдайда азаматтың қандай жеке немесе заңды құқықтары бұзылып тұр?\n"
             "2. Бұл нақты мазмұн бойынша полицияға (CyberPol) шағымданғанда қандай дәлелдер ұсыну керек және қандай қадамдар жасалуы тиіс?"
         )
 
-        # Gemini-ге сурет пен сұранысты бірге жіберу
-        response = model.generate_content([prompt, img])
+        response = model.generate_content([prompt, pil_img])
         return response.text
     except Exception as e:
         return f"Gemini API қатесі: {str(e)}"
@@ -84,12 +80,18 @@ def analyze_video_sightengine(video_bytes):
         cap.release()
 
         if not ret:
-            return {"success": False, "error": "Cannot read video frame"}
+            return {"success": False, "error": "Cannot read video frame", "frame_pil": None}
+
+        # OpenCV кадрын PIL форматқа және байтқа айналдыру
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        pil_img = Image.fromarray(frame_rgb)
 
         _, buffer = cv2.imencode('.jpg', frame)
-        return analyze_image_sightengine(buffer.tobytes())
+        res = analyze_image_sightengine(buffer.tobytes())
+        res["frame_pil"] = pil_img
+        return res
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": str(e), "frame_pil": None}
 
 # ---------------------------------------------------------
 # 3. Бет интерфейсі
@@ -114,9 +116,10 @@ with tab1:
                         if pct > 50:
                             st.error("🚨 ЕСКЕРТУ: Бұл суретте Жасанды Интеллект (Deepfake) белгілері бар!")
                             st.markdown("---")
-                            st.subheader("⚖️ Google Gemini Жеке заңгерлік сараптамасы (Сурет мазмұны бойынша)")
+                            st.subheader("⚖️ Google Gemini Заңгерлік Консультациясы")
                             with st.spinner("Сурет мазмұны талданып, заңгерлік кеңес құрастырылуда..."):
-                                advice = get_custom_legal_advice_gemini_with_image(uploaded_file, "сурет")
+                                pil_img = Image.open(uploaded_file)
+                                advice = get_custom_legal_advice_gemini_with_pil(pil_img, "сурет")
                                 st.info(advice)
                         else:
                             st.success("✅ Сурет таза немесе ЖИ белгілері анықталмады.")
@@ -138,8 +141,8 @@ with tab1:
                             st.error("🚨 ЕСКЕРТУ: Видеода Жасанды Интеллект (Deepfake) белгілері бар!")
                             st.markdown("---")
                             st.subheader("⚖️ Google Gemini Заңгерлік Консультациясы")
-                            with st.spinner("Заңгерлік кеңес құрастырылуда..."):
-                                advice = get_custom_legal_advice_gemini_with_image(uploaded_video, "видео")
+                            with st.spinner("Видео кадры талданып, заңгерлік кеңес құрастырылуда..."):
+                                advice = get_custom_legal_advice_gemini_with_pil(res["frame_pil"], "видео")
                                 st.info(advice)
                         else:
                             st.success("✅ Видео таза немесе ЖИ белгілері анықталмады.")
