@@ -2,3 +2,4 @@ streamlit
 requests
 opencv-python-headless
 google-generativeai
+Pillow
