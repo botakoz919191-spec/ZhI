@@ -6,16 +6,11 @@ import cv2
 import openai
 
 # =========================================================
-# 🗝️ API КІЛТТЕРІ
+# 🗝️ ҚАУІПСІЗ API КІЛТТЕРІ (Secrets арқылы оқылады)
 # =========================================================
-SIGHTENGINE_USER = "1282198950"
-SIGHTENGINE_SECRET = "VFvoLLmm7Z97MU95LddGTbuNrhhYuZng"
-
-# OpenAI кілтін Secrets-тен немесе тікелей алу
-if "OPENAI_KEY" in st.secrets:
-    OPENAI_KEY = st.secrets["OPENAI_KEY"]
-else:
-    OPENAI_KEY = "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"
+SIGHTENGINE_USER = st.secrets.get("SIGHTENGINE_USER", "1282198950")
+SIGHTENGINE_SECRET = st.secrets.get("SIGHTENGINE_SECRET", "VFvoLLmm7Z97MU95LddGTbuNrhhYuZng")
+OPENAI_KEY = st.secrets.get("OPENAI_KEY", "")
 
 # ---------------------------------------------------------
 # 1. Бет параметрлері
@@ -50,17 +45,19 @@ def analyze_image_sightengine(image_bytes):
 
 
 def get_custom_legal_advice(media_type):
-    """OpenAI арқылы ASCII қатесінсіз кеңес құрастыру"""
+    """OpenAI арқылы ASCII/UTF-8 қатесінсіз кеңес алу"""
     try:
+        if not OPENAI_KEY:
+            return "OpenAI API кілті табулы емес. Secrets бөлімін тексеріңіз."
+            
         client = openai.OpenAI(api_key=OPENAI_KEY)
         
-        # ASCII қатесін болдырмау үшін стандартты текстік формат
-        system_prompt = "You are a professional legal AI assistant specializing in Kazakhstan Cyber Law."
+        system_prompt = "You are a legal advisor for Kazakhstan law."
         user_prompt = (
-            f"Analyzed media type: {media_type}. AI Deepfake detection score is above 50%. "
-            "Please provide detailed legal consultation in Kazakh language based on Kazakhstan Legislation "
-            "(Civil Code Arts. 143, 145, Criminal Code Art. 147, 194, Administrative Code 456-2). "
-            "Explain what rights were violated and step-by-step actions for reporting to CyberPol."
+            f"Analyzed file type: {media_type}. AI Deepfake detection confidence is higher than 50%. "
+            "Provide legal consultation in Kazakh language based on the legislation of the Republic of Kazakhstan "
+            "(Civil Code Articles 143, 145, Criminal Code Articles 147, 194, Administrative Code Article 456-2). "
+            "Explain what laws were violated and detail step-by-step instructions on filing a complaint to CyberPol."
         )
 
         response = client.chat.completions.create(
@@ -73,7 +70,7 @@ def get_custom_legal_advice(media_type):
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"OpenAI error: {str(e)}"
+        return f"OpenAI қатесі: {str(e)}"
 
 
 def analyze_video_sightengine(video_bytes):
@@ -95,7 +92,7 @@ def analyze_video_sightengine(video_bytes):
         return {"success": False, "error": str(e)}
 
 # ---------------------------------------------------------
-# 3. Интерфейс
+# 3. Бет интерфейсі
 # ---------------------------------------------------------
 tab1, tab2 = st.tabs(["🖼️ / 🎥 Медианы ЖИ-ге талдау", "💬 ЖИ Заңгер Консультант"])
 
@@ -108,14 +105,14 @@ with tab1:
         if uploaded_file:
             st.image(uploaded_file, caption="Жүктелген сурет", use_container_width=True)
             if st.button("🔍 Суретті талдау"):
-                with st.spinner("Талдау жүріп жатыр..."):
+                with st.spinner("ЖИ сараптамасы жүріп жатыр..."):
                     res = analyze_image_sightengine(uploaded_file.getvalue())
                     if res["success"]:
                         pct = res["percentage"]
                         st.markdown(f"### 📊 ЖИ (Deepfake) ықтималдығы: **{pct}%**")
                         
                         if pct > 50:
-                            st.error("🚨 ЕСКЕРТУ: Бұл суретте Жасанды Интеллект белгілері бар!")
+                            st.error("🚨 ЕСКЕРТУ: Бұл суретте Жасанды Интеллект (Deepfake) белгілері бар!")
                             st.markdown("---")
                             st.subheader("⚖️ OpenAI ЖИ Арнайы Заңгерлік Консультациясы")
                             with st.spinner("Заңгерлік кеңес құрастырылуда..."):
@@ -131,7 +128,7 @@ with tab1:
         if uploaded_video:
             st.video(uploaded_video)
             if st.button("🎥 Видеоны талдау"):
-                with st.spinner("Талдау жүріп жатыр..."):
+                with st.spinner("ЖИ сараптамасы жүріп жатыр..."):
                     res = analyze_video_sightengine(uploaded_video.getvalue())
                     if res["success"]:
                         pct = res["percentage"]
