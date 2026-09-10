@@ -51,8 +51,8 @@ def get_custom_legal_advice_gemini(media_type):
             return "Gemini API кілті орнатылмаған. Streamlit Secrets бөлімін тексеріңіз."
 
         genai.configure(api_key=GEMINI_KEY)
-        # Ең соңғы жаңа модель ге ауыстырылды
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        # Ұсынылған жаңа модельге ауыстырылды
+        model = genai.GenerativeModel('gemini-3.6-flash')
         
         prompt = (
             f"Жүктелген {media_type} арқылы ЖИ (Deepfake) анықталды. "
@@ -163,7 +163,7 @@ with tab2:
                         st.error("Gemini API кілті бапталмаған.")
                     else:
                         genai.configure(api_key=GEMINI_KEY)
-                        model = genai.GenerativeModel('gemini-2.5-flash')
+                        model = genai.GenerativeModel('gemini-3.6-flash')
                         
                         full_prompt = "Сіз ҚР киберқылмыс және Азаматтық/Қылмыстық заңдары бойынша білікті ЖИ Заңгерсіз. Қазақ тілінде жауап беріңіз.\n" + user_input
                         response = model.generate_content(full_prompt)
