@@ -6,12 +6,17 @@ import cv2
 import openai
 
 # =========================================================
-# 🗝️ АВТОМАТТАНДЫРЫЛҒАН API КІЛТТЕРІ
+# 🗝️ API КІЛТТЕРІ
 # =========================================================
 SIGHTENGINE_USER = "1282198950"
 SIGHTENGINE_SECRET = "VFvoLLmm7Z97MU95LddGTbuNrhhYuZng"
 SERPAPI_KEY = "d7ae383bc732173b646bbc2fefa6ec5080a28bb63eb43030c25f739c542552e8"
-OPENAI_KEY = st.secrets["OPENAI_KEY"]
+
+# Streamlit Secrets немесе Тікелей кілт
+try:
+    OPENAI_KEY = st.secrets["OPENAI_KEY"]
+except:
+    OPENAI_KEY = "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"
 
 # ---------------------------------------------------------
 # 1. Бет параметрлері
@@ -47,30 +52,32 @@ def analyze_image_sightengine(image_bytes):
         return {"success": False, "error": str(e)}
 
 
-def get_custom_legal_advice(media_type_str, image_url_or_desc="Жүктелген ЖИ медиасы"):
-    """OpenAI арқылы суреттегі/видеодағы жағдайға арнайы жеке консультация генерациялау"""
+def get_custom_legal_advice(media_type_str):
+    """OpenAI арқылы кодировка қатесінсіз кеңес алу"""
     try:
         client = openai.OpenAI(api_key=OPENAI_KEY)
-        prompt = f"""
-        Пайдаланушы {media_type_str} жүктеді және оның ЖИ (Deepfake) екені анықталды.
-        Сіз ҚР Заңгерісіз. Төмендегі талаптар бойынша Қазақстан Республикасының заңдарына (ҚР АК, ҚК, ӘҚБтК) сүйеніп, дайын шаблонсыз, жеке кеңес дайындаңыз:
-        1. Осы медиадағы жағдай бойынша қандай азаматтық/қылмыстық құқықтар бұзылған болуы мүмкін?
-        2. Полицияға (CyberPol) және сотқа шағымдану үшін нақты қандай баптарды (ҚР АК 143, 145, ҚР ҚК 147, 194, ӘҚБтК 456-2 т.б.) қолданған дұрыс?
-        3. Бұл жағдай бойынша пайдаланушы не істеуі керек (қадамдық алгоритм)?
-        Жауапты қазақ тілінде, түсінікті және заңдық тұрғыдан нақты жазыңыз.
-        """
         
+        # Кодировка қатесін болдырмау үшін unicode форматында жіберу
+        prompt_text = (
+            f"Жүктелген {media_type_str} арқылы ЖИ (Deepfake) анықталды. "
+            "Қазақстан Республикасының заңнамасына (ҚР АК 143, 145-баптары, ҚР ҚК 147, 194-баптары, ӘҚБтК 456-2) "
+            "сүйене отырып, мына сұрақтарға заңгерлік жауап беріңіз:\n"
+            "1. Бұл жағдайда қандай құқықтар бұзылған?\n"
+            "2. Азамат полицияға (CyberPol) және сотқа шағымдану үшін не істеуі керек?\n"
+            "Жауапты қазақ тілінде түсінікті етіп жазыңыз."
+        )
+
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "Сіз ҚР киберқылмыс және құқық қорғау саласындағы тәжірибелі ЖИ Заңгерсіз."},
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": prompt_text}
             ],
-            temperature=0.4
+            temperature=0.3
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"OpenAI Консультациясын алуда қате шықты: {str(e)}"
+        return f"Консультация алуда қате шықты: {str(e)}"
 
 
 def analyze_video_sightengine(video_bytes):
@@ -120,17 +127,16 @@ with tab1:
                         pct = res["percentage"]
                         st.markdown(f"### 📊 ЖИ (Deepfake) генерация ықтималдығы: **{pct}%**")
                         
-                        # Егер ЖИ болса: OpenAI арқылы жеке заңгерлік кеңес құрастыру
                         if pct > 50:
                             st.error("🚨 ЕСКЕРТУ: Бұл суретте Жасанды Интеллект (Deepfake) белгілері анықталды!")
                             st.markdown("---")
                             st.subheader("⚖️ OpenAI ЖИ Арнайы Заңгерлік Консультациясы")
                             
-                            with st.spinner("OpenAI осы суретке байланысты жеке заңгерлік кеңес дайындауда..."):
+                            with st.spinner("OpenAI заңгерлік кеңес дайындауда..."):
                                 advice = get_custom_legal_advice("сурет")
                                 st.info(advice)
                         else:
-                            st.success("✅ Сурет таза немесе ЖИ белгілері анықталмады (шынайы медиа болуы мүмкін).")
+                            st.success("✅ Сурет таза немесе ЖИ белгілері анықталмады.")
                     else:
                         st.error(f"Талдау қатесі: {res['error']}")
 
@@ -148,12 +154,12 @@ with tab1:
                         st.markdown(f"### 📊 Видеодағы ЖИ (Deepfake) ықтималдығы: **{pct}%**")
                         
                         if pct > 50:
-                            st.error("🚨 ЕСКЕРТУ: Видеода Жасанды Интеллект (Deepfake/FaceSwap) белгілері бар!")
+                            st.error("🚨 ЕСКЕРТУ: Видеода Жасанды Интеллект (Deepfake) белгілері бар!")
                             st.markdown("---")
                             st.subheader("⚖️ OpenAI ЖИ Арнайы Заңгерлік Консультациясы")
                             
-                            with st.spinner("OpenAI осы видеоға байланысты жеке заңгерлік кеңес дайындауда..."):
-                                advice = get_custom_legal_advice("видеофайл")
+                            with st.spinner("OpenAI заңгерлік кеңес дайындауда..."):
+                                advice = get_custom_legal_advice("видео")
                                 st.info(advice)
                         else:
                             st.success("✅ Видео таза немесе ЖИ белгілері анықталмады.")
@@ -161,7 +167,7 @@ with tab1:
                         st.error(f"Талдау қатесі: {res['error']}")
 
 # =========================================================
-# ТАБ 2: ЖИ Заңгер Консультант (ChatGPT Chat)
+# ТАБ 2: ЖИ Заңгер Консультант
 # =========================================================
 with tab2:
     st.subheader("💬 Онлайн ЖИ Заңгер Консультант")
@@ -187,7 +193,7 @@ with tab2:
                     response = client.chat.completions.create(
                         model="gpt-4o-mini",
                         messages=[
-                            {"role": "system", "content": "Сіз Қазақстан Республикасының киберқылмыс және Азаматтық/Қылмыстық заңдары бойынша маманданған білікті ЖИ Заңгерсіз. Пайдаланушыларға ҚР АК 143, 145-баптары, ҚР ҚК 147, 194-баптары бойынша нақты әрі түсінікті кеңес беріңіз."},
+                            {"role": "system", "content": "Сіз ҚР киберқылмыс бойынша ЖИ Заңгерсіз."},
                             *st.session_state.messages
                         ],
                         temperature=0.3
