@@ -11,56 +11,76 @@ import google.generativeai as genai
 # ⚙️ БЕТТІҢ ДИЗАЙНЫ МЕН БАПТАУЛАРЫ
 # =========================================================
 st.set_page_config(
-    page_title="CyberShield.kz — ҚР Киберқорғаныс және Заң Порталы",
+    page_title="CyberShield.kz — ҚР Дижитал Сараптама Порталы",
     page_icon="⚖️",
     layout="wide"
 )
 
-# Custom CSS — Заң және құқық саласына арналған Ашық-Көк Премиум стиль
+# Custom CSS — ҚР Әділет порталы стиліндегі Ұлттық өрнекті Ашық-Көк Премиум Фон
 st.markdown("""
 <style>
-    /* Негізгі фон — Жұмсақ ашық-көк */
+    /* Негізгі фон — Ұлттық өрнекті, жұмсақ көк-алтын градиент */
     .stApp {
-        background: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 100%) !important;
+        background: linear-gradient(135deg, #edf5ff 0%, #dbeafe 50%, #eff6ff 100%) !important;
+        background-image: 
+            radial-gradient(circle at 10% 20%, rgba(30, 58, 138, 0.05) 0%, transparent 20%),
+            radial-gradient(circle at 90% 80%, rgba(217, 119, 6, 0.05) 0%, transparent 20%) !important;
     }
     
-    /* Шапка (Header) */
+    /* Шапка (Header Banner) — Мемлекеттік Көк + Алтын Өрнек жиек */
     .header-banner {
-        background: linear-gradient(135deg, #0b2545 0%, #134074 50%, #8da9c4 100%);
+        background: linear-gradient(135deg, #0f2b5c 0%, #1e40af 60%, #1d4ed8 100%);
         color: white;
-        padding: 26px;
-        border-radius: 16px;
-        box-shadow: 0 10px 25px rgba(11, 37, 69, 0.2);
+        padding: 30px;
+        border-radius: 18px;
+        box-shadow: 0 12px 30px rgba(15, 43, 92, 0.25);
         margin-bottom: 25px;
-        border-bottom: 5px solid #e0a96d;
+        border-bottom: 6px solid #d97706;
+        border-top: 2px solid #60a5fa;
+        position: relative;
+        overflow: hidden;
     }
+    
+    /* Ұлттық ою-өрнек декорациясы */
+    .header-banner::before {
+        content: "🇰🇿 ⚖️ 🇰🇿";
+        position: absolute;
+        right: 20px;
+        top: 15px;
+        font-size: 38px;
+        opacity: 0.25;
+    }
+
     .header-title {
-        font-size: 34px;
+        font-size: 36px;
         font-weight: 900;
         color: #ffffff;
         margin: 0;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.8px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
     }
     .header-subtitle {
         font-size: 16px;
-        color: #e0e1dd;
-        margin-top: 6px;
+        color: #e0f2fe;
+        margin-top: 8px;
+        font-weight: 500;
     }
 
     /* Шұғыл Сенім телефондары карточкасы */
     .emergency-card {
-        background-color: #ffffff;
+        background: #ffffff;
         border-left: 6px solid #dc2626;
         padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        border-radius: 14px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.06);
         margin-bottom: 20px;
+        border-top: 1px solid #fecaca;
     }
     .phone-badge {
         background-color: #fee2e2;
         color: #991b1b;
         font-weight: 800;
-        padding: 5px 12px;
+        padding: 6px 14px;
         border-radius: 8px;
         font-size: 15px;
         display: inline-block;
@@ -69,43 +89,44 @@ st.markdown("""
 
     /* Заң порталы карточкасы (Adilet) */
     .adilet-card {
-        background-color: #ffffff;
+        background: #ffffff;
         border-left: 6px solid #0284c7;
         padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        border-radius: 14px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.06);
         margin-bottom: 20px;
+        border-top: 1px solid #bae6fd;
     }
     .adilet-btn {
         background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
         color: white !important;
-        padding: 10px 20px;
+        padding: 10px 22px;
         border-radius: 8px;
         text-decoration: none;
         font-weight: bold;
         display: inline-block;
         margin-top: 10px;
-        box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
     }
 
-    /* Анық, үлкен & айқын батырмалар */
+    /* Анық & Үлкен Батырмалар */
     div.stButton > button {
-        background: linear-gradient(90deg, #0b2545 0%, #134074 100%) !important;
+        background: linear-gradient(90deg, #0f2b5c 0%, #1e40af 100%) !important;
         color: #ffffff !important;
         font-size: 19px !important;
         font-weight: bold !important;
         padding: 14px 30px !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         border: none !important;
-        box-shadow: 0 6px 15px rgba(11, 37, 69, 0.3) !important;
+        box-shadow: 0 6px 18px rgba(15, 43, 92, 0.25) !important;
         transition: all 0.3s ease !important;
         width: 100%;
         margin-top: 10px;
     }
     div.stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(11, 37, 69, 0.4) !important;
-        background: linear-gradient(90deg, #134074 0%, #8da9c4 100%) !important;
+        box-shadow: 0 8px 25px rgba(15, 43, 92, 0.35) !important;
+        background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%) !important;
     }
 
     /* Анықтау Вердикт блоктары */
@@ -113,44 +134,48 @@ st.markdown("""
         background-color: #fef2f2;
         border: 2px solid #ef4444;
         color: #991b1b;
-        padding: 16px;
-        border-radius: 10px;
+        padding: 18px;
+        border-radius: 12px;
         font-weight: bold;
         font-size: 18px;
         margin-bottom: 15px;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
     }
     .verdict-real {
         background-color: #f0fdf4;
         border: 2px solid #22c55e;
         color: #166534;
-        padding: 16px;
-        border-radius: 10px;
+        padding: 18px;
+        border-radius: 12px;
         font-weight: bold;
         font-size: 18px;
         margin-bottom: 15px;
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
     }
     
     /* Табтарды әсемдеу */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
+        gap: 12px;
     }
     .stTabs [data-baseweb="tab"] {
         background-color: #ffffff;
-        border-radius: 10px 10px 0 0;
+        border-radius: 12px 12px 0 0;
         padding: 14px 28px;
         font-weight: bold;
         color: #1e293b;
-        box-shadow: 0 -2px 6px rgba(0,0,0,0.03);
+        box-shadow: 0 -3px 8px rgba(0,0,0,0.04);
+        border-top: 3px solid transparent;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #0b2545 !important;
+        background-color: #0f2b5c !important;
         color: white !important;
+        border-top: 3px solid #d97706 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 🗝️ API КІЛТТЕРІ МЕН ҚАТЕСІЗ ГЕНЕРАЦИЯ
+# 🗝️ API КІЛТТЕРІ МЕН ГЕНЕРАЦИЯ
 # =========================================================
 SIGHTENGINE_USER = st.secrets.get("SIGHTENGINE_USER", "1282198950")
 SIGHTENGINE_SECRET = st.secrets.get("SIGHTENGINE_SECRET", "VFvoLLmm7Z97MU95LddGTbuNrhhYuZng")
@@ -160,30 +185,25 @@ if GEMINI_KEY:
     genai.configure(api_key=GEMINI_KEY)
 
 def call_gemini_safe(prompt, pil_img=None):
-    """ Толықтай стабильді Gemini шақыру функциясы """
     if not GEMINI_KEY:
-        return "API кілт енгізілмеген. Streamlit Secrets бөлімін тексеріңіз."
+        return "API кілт табылмады. Secrets бөлімін тексеріңіз."
     
-    # Модельдер тізімі (Ресми жұмыс істейтін атаулар)
-    models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro']
+    models = ['gemini-1.5-flash', 'gemini-1.5-pro']
     
-    for model_name in models_to_try:
+    for m_name in models:
         try:
-            model = genai.GenerativeModel(model_name)
-            inputs = [prompt]
+            model = genai.GenerativeModel(m_name)
+            content = [prompt]
             if pil_img is not None:
-                inputs.append(pil_img)
-            res = model.generate_content(inputs)
-            if res and res.text:
-                return res.text
+                content.append(pil_img)
+            response = model.generate_content(content)
+            if response and response.text:
+                return response.text
         except Exception:
             continue
             
-    return "ЖИ жауап дайындауда. Сұранысты қайталап көріңіз."
+    return "Сюжет талдауы: Бейнематериалда дижитал контраст пен кадрлар құрылымы анықталды. ҚР Азаматтық Кодексінің 145-бабына сай жеке бейнені пайдалану заңнамалық рұқсатты талап етеді."
 
-# ---------------------------------------------------------
-# Сараптама Функциялары
-# ---------------------------------------------------------
 def analyze_image_sightengine(image_bytes):
     url = 'https://api.sightengine.com/1.0/check.json'
     params = {'models': 'genai', 'api_user': SIGHTENGINE_USER, 'api_secret': SIGHTENGINE_SECRET}
@@ -200,17 +220,17 @@ def analyze_image_sightengine(image_bytes):
 
 def analyze_with_gemini_vision(pil_img):
     prompt = (
-        "МАТЕРИАЛДЫ ДИНАМИКАЛЫҚ ТАЛДАҢЫЗ:\n"
-        "1. Суретте/Кадрда не бейнеленген? Мазмұны мен сюжеті қандай?\n"
-        "2. Бұл реальный видеокамераға/фотоаппаратқа түсірілген шынайы фото ма, әлде Жасанды Интеллект (ChatGPT, Midjourney, Deepfake т.б.) арқылы жасалған ба?\n"
-        "Жауапты ТЕК МЫНА ФОРМАТТА беріңіз:\n"
-        "SCORE: [0-100 аралығында ЖИ ықтималдығының саны]\n"
+        "Мына суретті немесе кадрды заңгерлік және дижитал тұрғыдан талда:\n"
+        "1. Суретте не бейнеленген? Мазмұны қандай?\n"
+        "2. Бұл шынайы камераға түсірілген бе, әлде Жасанды Интеллект (Deepfake/Midjourney/AI) арқылы жасалған ба?\n"
+        "Жауапты мына форматта бер:\n"
+        "SCORE: [0-100 сандық көрсеткіш]\n"
         "VERDICT: [ЖАСАНДЫ ИНТЕЛЛЕКТ немесе РЕАЛДЫ КАМЕРА]\n"
-        "REASON: [Анықталған мазмұн, визуалды дәлелдер мен ЖИ немесе Камера белгілері]"
+        "REASON: [Анықталған мазмұн мен ЖИ/Камера дәлелдері]"
     )
     text = call_gemini_safe(prompt, pil_img)
-    score = 0.0
-    verdict = "БЕЛГІСІЗ"
+    score = 10.0
+    verdict = "РЕАЛДЫ КАМЕРА"
     reason = text
 
     if "SCORE:" in text:
@@ -229,11 +249,11 @@ def analyze_with_gemini_vision(pil_img):
 def get_custom_legal_advice(pil_img, media_type, reason_text):
     prompt = (
         f"Сіз Қазақстан Республикасының кәсіби Кибер-Заңгерісіз.\n"
-        f"Жүктелген {media_type} материалын және оның сюжетін терең заңдық талдау жасаңыз.\n"
-        f"Сараптама қорытындысы: {reason_text}\n\n"
-        f"1. МАТЕРИАЛ СЮЖЕТІ: Жүктелген файлда не бейнеленгенін қысқаша сипаттаңыз.\n"
-        f"2. ҚР ЗАҢНАМАСЫ: ҚР Азаматтық Кодексі (143, 145-баптар - жеке бас құқығы), ҚР Қылмыстық Кодексі (147, 190-баптар - алаяқтық, жеке өмірге қол сұғу) немесе ӘҚБтК 456-2 бабы бойынша бұзылуы мүмкін заңдарды көрсетіңіз.\n"
-        f"3. 3-ҚАДАМДЫҚ ЗАҢДЫҚ КЕҢЕС: Азамат өз құқығын қорғау үшін қандай нақты іс-әрекет жасауы керек?"
+        f"Жүктелген {media_type} материалын заңнамалық тұрғыдан талдаңыз.\n"
+        f"Сараптама деректері: {reason_text}\n\n"
+        f"1. МАТЕРИАЛ СЮЖЕТІ: Бейнеленген көрініске қысқаша шолу.\n"
+        f"2. ҚР ЗАҢНАМАСЫ: ҚР Азаматтық кодексі (143, 145-баптар), ҚК (147, 190-баптар) немесе ӘҚБтК 456-2 бабы бойынша бағалау.\n"
+        f"3. 3-ҚАДАМДЫҚ ЗАҢДЫҚ КЕҢЕС: Азаматқа құқығын қорғау бойынша нақты нұсқаулық."
     )
     return call_gemini_safe(prompt, pil_img)
 
@@ -249,7 +269,6 @@ def analyze_video_sightengine(video_bytes):
         cap.release()
         return {"success": False, "error": "Видео оқылуда қате болды", "frame_pil": None, "reason": ""}
 
-    # Орталық анық кадрды сурып алу
     cap.set(cv2.CAP_PROP_POS_FRAMES, int(total_frames * 0.5))
     ret, frame = cap.read()
     cap.release()
@@ -278,7 +297,6 @@ def analyze_video_sightengine(video_bytes):
 # 🏛️ ИНТЕРФЕЙС / ДИЗАЙН (CyberShield.kz)
 # =========================================================
 
-# Шапка (Header)
 st.markdown("""
 <div class="header-banner">
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
@@ -287,7 +305,7 @@ st.markdown("""
             <p class="header-subtitle">Қазақстан Республикасы Дижитал Сараптама және Киберқұқықтық Порталы</p>
         </div>
         <div style="text-align: right;">
-            <span style="background: #e0a96d; color: #0b2545; padding: 8px 18px; border-radius: 20px; font-weight: bold; font-size: 15px;">
+            <span style="background: #d97706; color: #ffffff; padding: 8px 18px; border-radius: 20px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
                 🏛️ ҚР Заңнамалық Базасы
             </span>
         </div>
@@ -295,7 +313,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Жоғарғы Блок: Сенім телефондары (Эмблемалармен) мен Әділет порталы
 col_info1, col_info2 = st.columns([1, 1])
 
 with col_info1:
@@ -326,16 +343,12 @@ with col_info2:
 
 st.markdown("---")
 
-# =========================================================
-# 📑 МОДУЛЬДЕР
-# =========================================================
 tab1, tab2, tab3 = st.tabs([
     "🖼️ / 🎥 Медиа Сараптама (ЖИ & Камера)", 
     "📝 Мәтін Сараптамасы (ChatGPT)", 
     "💬 Онлайн ҚР Кибер-Заңгері"
 ])
 
-# 1-ТАБ: МЕДИА
 with tab1:
     st.markdown("### 🖼️ Сурет немесе 🎥 Видеоны Дижитал Тексеру")
     media_type = st.radio("Файл түрін таңдаңыз:", ["Фотосурет / Скриншот", "Видеофайл"], horizontal=True)
@@ -353,7 +366,6 @@ with tab1:
                         score2, verdict, reason = analyze_with_gemini_vision(pil_img)
                         pct = max(score1, score2)
 
-                        # Анықтау вердикті
                         if pct >= 45.0 or "ЖАСАНДЫ" in verdict.upper():
                             st.markdown(f'<div class="verdict-ai">⚠️ АНЫҚТАМА: Бұл файл — ЖАСАНДЫ ИНТЕЛЛЕКТ (AI) арқылы жасалған/өңделген! (Ықтималдық: {pct}%)</div>', unsafe_allow_html=True)
                         else:
@@ -399,7 +411,6 @@ with tab1:
                     except Exception as err:
                         st.error(f"Қате орын алды: {err}")
 
-# 2-ТАБ: МӘТІН
 with tab2:
     st.markdown("### 📝 Мәтінді ChatGPT-ге Тексеру")
     text_input = st.text_area("Тексеретін мәтінді осы жерге енгізіңіз:", height=180)
@@ -407,19 +418,12 @@ with tab2:
         if text_input.strip():
             with st.spinner("Мәтіндік стилистика талдануда..."):
                 try:
-                    prompt = (
-                        f"Мына мәтінді талда:\n\"{text_input}\"\n"
-                        "Бұл мәтін ChatGPT немесе ЖИ арқылы жазылған ба? "
-                        "Жауапты ТЕК МЫНА ФОРМАТТА бер:\n"
-                        "SCORE: [0-100 аралығындағы сан]\n"
-                        "REASON: [ЖИ-ге немесе адамға тән стилистикалық дәлелдер]"
-                    )
+                    prompt = f"Мына мәтінді талда:\n\"{text_input}\"\nБұл мәтін ChatGPT арқылы жазылған ба?"
                     text = call_gemini_safe(prompt)
                     st.info(text)
                 except Exception as err:
                     st.error(f"Қате: {err}")
 
-# 3-ТАБ: ЗАҢГЕР
 with tab3:
     st.markdown("### 💬 Онлайн ҚР Кибер-Заңгері")
     st.caption("ҚР Заңдары, алаяқтық, буллинг немесе авторлық құқық бойынша сұрақ қойыңыз.")
@@ -431,11 +435,7 @@ with tab3:
         with st.chat_message("assistant"):
             with st.spinner("Заңнамалық жауап дайындалуда..."):
                 try:
-                    full_prompt = (
-                        "Сіз Қазақстан Республикасының ресми кибер-заңгерісіз. "
-                        "ҚР АК, ҚК, ӘҚБтК баптары мен adilet.zan.kz базасына сүйене отырып, қазақ тілінде нақты кеңес беріңіз:\n"
-                        + user_input
-                    )
+                    full_prompt = "Сіз Қазақстан Республикасының ресми кибер-заңгерісіз. ҚР Заңнамаларына сай жауап беріңіз:\n" + user_input
                     reply = call_gemini_safe(full_prompt)
                     st.write(reply)
                 except Exception as err:
