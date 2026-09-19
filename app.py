@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 import json
-import io
+import time
 from PIL import Image
 import google.generativeai as genai
 
@@ -61,44 +61,43 @@ GEMINI_KEY = st.secrets.get("GEMINI_KEY", "")
 if GEMINI_KEY:
     genai.configure(api_key=GEMINI_KEY)
 
-# Функция оптимизации размера изображения
-def compress_image(pil_img, max_size=(800, 800)):
-    """Уменьшает разрешение и вес фото перед отправкой в Gemini"""
+def compress_image(pil_img, max_size=(600, 600)):
+    """Суретті оңтайландыру және жеңілдету"""
     img_copy = pil_img.copy()
     img_copy.thumbnail(max_size, Image.Resampling.LANCZOS)
     return img_copy
 
 def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
     if not GEMINI_KEY:
-        return "⚠️ Gemini API ключы табылған жоқ. Secrets бөлімін тексеріңіз."
+        return "⚠️ Gemini API кілті (GEMINI_KEY) Streamlit Secrets бөлімінде көрсетілмеген!"
 
     models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro']
-    
-    # Оптимизируем фото перед отправкой
     prepared_img = compress_image(pil_img) if pil_img is not None else None
 
     for m_name in models_to_try:
-        try:
-            model = genai.GenerativeModel(m_name)
-            
-            full_prompt = f"{system_prompt}\n\n--- ЧАТ ТАРИХЫ ---\n"
-            for msg in chat_history:
-                full_prompt += f"{msg['role'].upper()}: {msg['content']}\n"
-            
-            full_prompt += f"\nПАЙДАЛАНУШЫ СҰРАҒЫ: {user_new_msg}\n"
-            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Сұраққа нақты, толық әрі мағыналы жауап бер. Бірдей дайын фразаларды қайталама!"
+        for attempt in range(2): # Қате болса 2 рет қайталап көреді
+            try:
+                model = genai.GenerativeModel(m_name)
+                
+                full_prompt = f"{system_prompt}\n\n--- ЧАТ ТАРИХЫ ---\n"
+                for msg in chat_history:
+                    full_prompt += f"{msg['role'].upper()}: {msg['content']}\n"
+                
+                full_prompt += f"\nПАЙДАЛАНУШЫ СҰРАҒЫ: {user_new_msg}\n"
+                full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Сұраққа нақты, толық әрі мағыналы жауап бер."
 
-            contents = [full_prompt]
-            if prepared_img is not None:
-                contents.append(prepared_img)
+                contents = [full_prompt]
+                if prepared_img is not None:
+                    contents.append(prepared_img)
 
-            response = model.generate_content(contents)
-            if response and response.text:
-                return response.text
-        except Exception as e:
-            continue
+                response = model.generate_content(contents)
+                if response and response.text:
+                    return response.text
+            except Exception as e:
+                time.sleep(1) # Жүйе сәл кідіріп, қайта тырысады
+                continue
 
-    return "⚠️ Запрос өңдеуде қате болды. Өтініш, сұрақты қайтадан қойып көрсеңіз."
+    return "⚠️ API лимиті немесе байланыс қатесі орын алды. Бірнеше секунд күтіп, қайта басып көріңіз."
 
 def analyze_image_sightengine(image_bytes):
     url = 'https://api.sightengine.com/1.0/check.json'
@@ -168,7 +167,6 @@ with tab1:
     if media_type == "Фотосурет / Скриншот":
         uploaded_file = st.file_uploader("Тексеретін суретті жүктеңіз (JPG, PNG)", type=["jpg", "jpeg", "png"])
         if uploaded_file:
-            # Уменьшенное отображение картинки в интерфейсе (220px)
             st.image(uploaded_file, caption="Жүктелген сурет", width=220)
 
             if st.button("🔍 Сюжеті мен түпнұсқалығын сараптау"):
@@ -233,7 +231,6 @@ with tab1:
         if uploaded_video:
             col_v1, col_v2 = st.columns([1, 2])
             with col_v1:
-                # Компактный вывод видео
                 st.video(uploaded_video)
 
 # ---------------------------------------------------------
