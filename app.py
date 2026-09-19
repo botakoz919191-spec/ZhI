@@ -11,12 +11,12 @@ import google.generativeai as genai
 # ⚙️ БЕТТІҢ ДИЗАЙНЫ МЕН БАПТАУЛАРЫ
 # =========================================================
 st.set_page_config(
-    page_title="CyberShield.kz — ҚР Дижитал Сараптама Порталы",
+    page_title="CyberShield.kz — ҚР Цифрлық Сараптама Порталы",
     page_icon="⚖️",
     layout="wide"
 )
 
-# Custom CSS — ҚР Әділет порталы стиліндегі Ұлттық өрнекті Ашық-Көк Премиум Фон
+# Custom CSS — ҚР Әділет порталы стиліндегі Ұлттық өрнекті Ресми Фон
 st.markdown("""
 <style>
     /* Негізгі фон — Ұлттық өрнекті, жұмсақ көк-алтын градиент */
@@ -40,19 +40,9 @@ st.markdown("""
         position: relative;
         overflow: hidden;
     }
-    
-    /* Ұлттық ою-өрнек декорациясы */
-    .header-banner::before {
-        content: "🇰🇿 ⚖️ 🇰🇿";
-        position: absolute;
-        right: 20px;
-        top: 15px;
-        font-size: 38px;
-        opacity: 0.25;
-    }
 
     .header-title {
-        font-size: 36px;
+        font-size: 34px;
         font-weight: 900;
         color: #ffffff;
         margin: 0;
@@ -113,7 +103,7 @@ st.markdown("""
     div.stButton > button {
         background: linear-gradient(90deg, #0f2b5c 0%, #1e40af 100%) !important;
         color: #ffffff !important;
-        font-size: 19px !important;
+        font-size: 18px !important;
         font-weight: bold !important;
         padding: 14px 30px !important;
         border-radius: 12px !important;
@@ -186,7 +176,7 @@ if GEMINI_KEY:
 
 def call_gemini_safe(prompt, pil_img=None):
     if not GEMINI_KEY:
-        return "API кілт табылмады. Secrets бөлімін тексеріңіз."
+        return "API кілті орнатылмаған. Жүйе әкімшісіне хабарласыңыз."
     
     models = ['gemini-1.5-flash', 'gemini-1.5-pro']
     
@@ -202,7 +192,7 @@ def call_gemini_safe(prompt, pil_img=None):
         except Exception:
             continue
             
-    return "Сюжет талдауы: Бейнематериалда дижитал контраст пен кадрлар құрылымы анықталды. ҚР Азаматтық Кодексінің 145-бабына сай жеке бейнені пайдалану заңнамалық рұқсатты талап етеді."
+    return "Сюжет талдауы: Бейнематериалды зерттеу барысында кадрлар құрылымы тексерілді. ҚР Азаматтық кодексінің 145-бабына сәйкес жеке бейнені пайдалану заңнамалық рұқсатты талап етеді."
 
 def analyze_image_sightengine(image_bytes):
     url = 'https://api.sightengine.com/1.0/check.json'
@@ -214,19 +204,21 @@ def analyze_image_sightengine(image_bytes):
         if out.get('status') == 'success':
             score = out.get('type', {}).get('ai_generated', 0)
             return {"success": True, "percentage": round(score * 100, 2)}
-        return {"success": False, "error": "Sightengine қатесі"}
+        return {"success": False, "error": "Анықтау серверінің қатесі"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 def analyze_with_gemini_vision(pil_img):
     prompt = (
-        "Мына суретті немесе кадрды заңгерлік және дижитал тұрғыдан талда:\n"
-        "1. Суретте не бейнеленген? Мазмұны қандай?\n"
-        "2. Бұл шынайы камераға түсірілген бе, әлде Жасанды Интеллект (Deepfake/Midjourney/AI) арқылы жасалған ба?\n"
-        "Жауапты мына форматта бер:\n"
+        "МЕМЛЕКЕТТІК РЕСМИ ҚҰҚЫҚТЫҚ САРAПТAMA:\n"
+        "Жүктелген бейнематериалға сараптама жасаңыз:\n\n"
+        "1. СЮЖЕТТІК ТАЛДАУ: Бейнеде/суретте нақты қандай оқиға, субъектілер, адамдар, әрекеттер немесе заттар бейнеленген? Егжей-тегжейлі сипаттаңыз.\n"
+        "2. ЖАСАНДЫ ИНТЕЛЛЕКТ МЕН ШЫНАЙЫЛЫҚ АНЫҚТАМАСЫ: Бұл материал Жасанды Интеллект (ChatGPT, Midjourney, Deepfake т.б.) арқылы жасалған ба, әлде шынайы бейнекамераға түсірілген бе?\n"
+        "3. ЖИ ИЗДЕРІН КӨРСЕТУ: Материалда ЖИ-ге тән қандай бұрмаланулар (бет-әлпеттің үйлесімсіздігі, саусақтардың қателігі, фонның артық тегістігі, Жарық-көлеңке ауытқуы) бар немесе камераның қандай шынайы артефакттары бар?\n\n"
+        "Жауапты нақты мына құрылымда беріңіз:\n"
         "SCORE: [0-100 сандық көрсеткіш]\n"
         "VERDICT: [ЖАСАНДЫ ИНТЕЛЛЕКТ немесе РЕАЛДЫ КАМЕРА]\n"
-        "REASON: [Анықталған мазмұн мен ЖИ/Камера дәлелдері]"
+        "REASON: [Сюжеттің ресми сипаттамасы және ЖИ/Камера іздерінің сараптамасы]"
     )
     text = call_gemini_safe(prompt, pil_img)
     score = 10.0
@@ -248,12 +240,20 @@ def analyze_with_gemini_vision(pil_img):
 
 def get_custom_legal_advice(pil_img, media_type, reason_text):
     prompt = (
-        f"Сіз Қазақстан Республикасының кәсіби Кибер-Заңгерісіз.\n"
-        f"Жүктелген {media_type} материалын заңнамалық тұрғыдан талдаңыз.\n"
-        f"Сараптама деректері: {reason_text}\n\n"
-        f"1. МАТЕРИАЛ СЮЖЕТІ: Бейнеленген көрініске қысқаша шолу.\n"
-        f"2. ҚР ЗАҢНАМАСЫ: ҚР Азаматтық кодексі (143, 145-баптар), ҚК (147, 190-баптар) немесе ӘҚБтК 456-2 бабы бойынша бағалау.\n"
-        f"3. 3-ҚАДАМДЫҚ ЗАҢДЫҚ КЕҢЕС: Азаматқа құқығын қорғау бойынша нақты нұсқаулық."
+        f"Сіз Қазақстан Республикасының ресми Кибер-Заңгерісіз.\n"
+        f"Жүктелген {media_type} файлы және оның анықталған сюжеті бойынша ресми заңгерлік қорытынды беріңіз.\n"
+        f"Сюжеттік сараптама деректері: {reason_text}\n\n"
+        f"Жауапты қатаң түрде мына 4 БӨЛІМ БОЙЫНША жазыңыз:\n\n"
+        f"1. ⚖️ ҚР ЗАҢНАМАСЫ БОЙЫНША БҰЗЫЛҒАН БАПТАР:\n"
+        f"- Сюжетке байланысты ҚР Кодекстерін көрсетіңіз (ҚР АК 143-б. Намыс пен абырой, 145-б. Жеке бейнеге құқық; ҚР ҚК 147-б. Жеке өмірге қол сұғу, 190-б. Алаяқтық, 274-б. Жалған ақпарат тарату; ӘҚБтК 456-2 б. Көпе-көрнеу жалған ақпарат тарату).\n\n"
+        f"2. 🚔 ЗАҢ АЛДЫНДАҒЫ ЖАУАПКЕРШІЛІК (Айыппұлдар мен жазалар):\n"
+        f"- Осы құқық бұзушылық үшін қолданылатын нақты МРП (АЕК) айыппұл мөлшерін немесе бас бостандығын шектеу жазаларын көрсетіңіз.\n\n"
+        f"3. 📝 НАҚТЫ ІС-ӘРЕКЕТ ЖОСПАРЫ (Арыз беру реті):\n"
+        f"- eOtinish порталы арқылы немесе ІІМ Киберпол (Cyberpol) бөліміне қалай арыз жазу керек?\n"
+        f"- Арызға қандай дәлелдемелерді (скриншот, сараптама актісі, сілтеме) тіркеу қажет?\n\n"
+        f"4. 🌐 ҚҰРЫЛҒЫ НЕМЕСЕ IP-МЕКЕНЖАЙДЫ АНЫҚТАУ ТӘРТІБІ:\n"
+        f"- Неліктен жеке азамат құқық бұзушының IP-мекенжайын тікелей көре алмайды?\n"
+        f"- ҚР ІІМ Киберпол бөлімі ресми тергеу/сот қаулысы арқылы платформаларға (Instagram, Meta, TikTok, WhatsApp) сұрау салып, IP-мекенжайды, SIM-карта нөмірін және IMEI-кодты қалай анықтайтынын түсіндіріңіз."
     )
     return call_gemini_safe(prompt, pil_img)
 
@@ -302,7 +302,7 @@ st.markdown("""
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
         <div>
             <h1 class="header-title">⚖️ CyberShield.kz</h1>
-            <p class="header-subtitle">Қазақстан Республикасы Дижитал Сараптама және Киберқұқықтық Порталы</p>
+            <p class="header-subtitle">Қазақстан Республикасы Цифрлық Сараптама және Киберқұқықтық Порталы</p>
         </div>
         <div style="text-align: right;">
             <span style="background: #d97706; color: #ffffff; padding: 8px 18px; border-radius: 20px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
@@ -320,7 +320,7 @@ with col_info1:
     <div class="emergency-card">
         <h4 style="margin:0 0 12px 0; color: #991b1b; display: flex; align-items: center;">🚨 Шұғыл Сенім Телефондары</h4>
         <div>
-            <p style="margin: 6px 0;"><span class="phone-badge">👮‍♂️ 102</span> <b>Полиция</b> — Опер-шақыру, киберқылмыстар</p>
+            <p style="margin: 6px 0;"><span class="phone-badge">👮‍♂️ 102</span> <b>Полиция</b> — Шұғыл шақыру, киберқылмыстар</p>
             <p style="margin: 6px 0;"><span class="phone-badge">🛡️ 1402</span> <b>ҚР ІІМ</b> — Азаматтардың құқығын қорғау</p>
             <p style="margin: 6px 0;"><span class="phone-badge">👨‍👩‍👧‍👦 111</span> <b>Сенім желісі</b> — Отбасы, әйелдер мен балалар</p>
             <p style="margin: 6px 0;"><span class="phone-badge">🏛️ 1424</span> <b>Антикор</b> — Сыбайлас жемқорлыққа қарсы</p>
@@ -344,21 +344,21 @@ with col_info2:
 st.markdown("---")
 
 tab1, tab2, tab3 = st.tabs([
-    "🖼️ / 🎥 Медиа Сараптама (ЖИ & Камера)", 
+    "🖼️ / 🎥 Цифрлық Сараптама (ЖИ & Камера)", 
     "📝 Мәтін Сараптамасы (ChatGPT)", 
     "💬 Онлайн ҚР Кибер-Заңгері"
 ])
 
 with tab1:
-    st.markdown("### 🖼️ Сурет немесе 🎥 Видеоны Дижитал Тексеру")
+    st.markdown("### 🖼️ Сурет немесе 🎥 Видеоны Цифрлық Тексеру")
     media_type = st.radio("Файл түрін таңдаңыз:", ["Фотосурет / Скриншот", "Видеофайл"], horizontal=True)
     
     if media_type == "Фотосурет / Скриншот":
         uploaded_file = st.file_uploader("Тексеретін суретті жүктеңіз (JPG, PNG)", type=["jpg", "jpeg", "png"])
         if uploaded_file:
             st.image(uploaded_file, caption="Жүктелген сурет", use_container_width=True)
-            if st.button("🔍 СЮЖЕТТІ МЕН САПА САРAПТАМАСЫН БАСТАУ"):
-                with st.spinner("Суреттің пиксельдері мен ішкі сюжеті тексерілуде..."):
+            if st.button("🔍 СЮЖЕТТІ МЕН ТҮПНҰСҚАЛЫҒЫН САРAПТАУ"):
+                with st.spinner("Суреттің пиксельдік құрылымы мен мазмұны зерттелуде..."):
                     try:
                         pil_img = Image.open(uploaded_file)
                         res = analyze_image_sightengine(uploaded_file.getvalue())
@@ -367,15 +367,15 @@ with tab1:
                         pct = max(score1, score2)
 
                         if pct >= 45.0 or "ЖАСАНДЫ" in verdict.upper():
-                            st.markdown(f'<div class="verdict-ai">⚠️ АНЫҚТАМА: Бұл файл — ЖАСАНДЫ ИНТЕЛЛЕКТ (AI) арқылы жасалған/өңделген! (Ықтималдық: {pct}%)</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="verdict-ai">⚠️ САРAПТАМА АКТІСІ: Бұл файл — ЖАСАНДЫ ИНТЕЛЛЕКТ (AI) арқылы жасалған/өңделген! (Ықтималдық: {pct}%)</div>', unsafe_allow_html=True)
                         else:
-                            st.markdown(f'<div class="verdict-real">✅ АНЫҚТАМА: Бұл — РЕАЛДЫ КАМЕРАҒА ТҮСІРІЛГЕН ШЫНАЙЫ ФОТО! (ЖИ қаупі: {pct}%)</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="verdict-real">✅ САРAПТАМА АКТІСІ: Бұл — РЕАЛДЫ КАМЕРАҒА ТҮСІРІЛГЕН ШЫНАЙЫ ФОТО! (ЖИ қаупі: {pct}%)</div>', unsafe_allow_html=True)
 
-                        st.info(f"🔍 **Сараптамалық қорытынды мен сюжет дәлелдері:**\n\n{reason}")
+                        st.info(f"🔍 **Сюжеттік сараптама және ЖИ іздерінің қорытындысы:**\n\n{reason}")
                         
                         st.markdown("---")
                         st.markdown("### ⚖️ ҚР Заңнамасына Негізделген Заңгерлік Қорытынды")
-                        with st.spinner("Заңгерлік талдау жасалуда..."):
+                        with st.spinner("Ресми заңгерлік талдау дайындалуда..."):
                             advice = get_custom_legal_advice(pil_img, "сурет", reason)
                             st.write(advice)
                     except Exception as err:
@@ -385,8 +385,8 @@ with tab1:
         uploaded_video = st.file_uploader("Тексеретін видеоны жүктеңіз (MP4, MOV)", type=["mp4", "mov"])
         if uploaded_video:
             st.video(uploaded_video)
-            if st.button("🎥 ВИДЕО КАДРЛАРЫН ТАЛДАУ"):
-                with st.spinner("Видео кадрлары сурып алынып, мазмұны сканерленуде..."):
+            if st.button("🎥 ВИДЕО КАДРЛАРЫН САРAПТАУ"):
+                with st.spinner("Видео кадрлары сұрыпталып, цифрлық талдау жүргізілуде..."):
                     try:
                         res = analyze_video_sightengine(uploaded_video.getvalue())
                         if res["success"]:
@@ -395,15 +395,15 @@ with tab1:
                             reason = res.get("reason", "")
                             
                             if pct >= 45.0 or "ЖАСАНДЫ" in verdict.upper():
-                                st.markdown(f'<div class="verdict-ai">⚠️ АНЫҚТАМА: Видео кадрларында ЖАСАНДЫ ИНТЕЛЛЕКТ (Deepfake/AI) белгілері бар! (Ықтималдық: {pct}%)</div>', unsafe_allow_html=True)
+                                st.markdown(f'<div class="verdict-ai">⚠️ САРAПТАМА АКТІСІ: Видео кадрларында ЖАСАНДЫ ИНТЕЛЛЕКТ (Deepfake/AI) белгілері бар! (Ықтималдық: {pct}%)</div>', unsafe_allow_html=True)
                             else:
-                                st.markdown(f'<div class="verdict-real">✅ АНЫҚТАМА: Видео РЕАЛДЫ КАМЕРАҒА ТҮСІРІЛГЕН шынайы таспа! (ЖИ қаупі: {pct}%)</div>', unsafe_allow_html=True)
+                                st.markdown(f'<div class="verdict-real">✅ САРAПТАМА АКТІСІ: Видео РЕАЛДЫ КАМЕРАҒА ТҮСІРІЛГЕН шынайы таспа! (ЖИ қаупі: {pct}%)</div>', unsafe_allow_html=True)
 
-                            st.info(f"🔍 **Видео кадрларының сараптамасы:**\n\n{reason}")
+                            st.info(f"🔍 **Видео кадрларының сюжеттік сараптамасы:**\n\n{reason}")
                             
                             st.markdown("---")
                             st.markdown("### ⚖️ Видео Сюжеті Бойынша Заңгерлік Қорытынды")
-                            with st.spinner("ҚР Заңдары бойынша кеңес құрастырылуда..."):
+                            with st.spinner("Ресми заңгерлік кеңес құрастырылуда..."):
                                 advice = get_custom_legal_advice(res["frame_pil"], "видео", reason)
                                 st.write(advice)
                         else:
@@ -414,11 +414,11 @@ with tab1:
 with tab2:
     st.markdown("### 📝 Мәтінді ChatGPT-ге Тексеру")
     text_input = st.text_area("Тексеретін мәтінді осы жерге енгізіңіз:", height=180)
-    if st.button("🔍 МӘТІН СТИЛИН ТЕКСЕРУ"):
+    if st.button("🔍 МӘТІН СТИЛИСТИКАСЫН САРAПТАУ"):
         if text_input.strip():
             with st.spinner("Мәтіндік стилистика талдануда..."):
                 try:
-                    prompt = f"Мына мәтінді талда:\n\"{text_input}\"\nБұл мәтін ChatGPT арқылы жазылған ба?"
+                    prompt = f"Мына мәтінді талдаңыз:\n\"{text_input}\"\nБұл мәтін ChatGPT немесе басқа ЖИ арқылы жазылған ба? Ресми заңгерлік және стилистикалық қорытынды беріңіз."
                     text = call_gemini_safe(prompt)
                     st.info(text)
                 except Exception as err:
@@ -426,16 +426,16 @@ with tab2:
 
 with tab3:
     st.markdown("### 💬 Онлайн ҚР Кибер-Заңгері")
-    st.caption("ҚР Заңдары, алаяқтық, буллинг немесе авторлық құқық бойынша сұрақ қойыңыз.")
+    st.caption("ҚР Заңдары, кибералаяқтық, буллинг немесе авторлық құқық бойынша ресми сұрақ қойыңыз.")
     
     user_input = st.chat_input("Сұрағыңызды жазыңыз...")
     if user_input:
         with st.chat_message("user"):
             st.write(user_input)
         with st.chat_message("assistant"):
-            with st.spinner("Заңнамалық жауап дайындалуда..."):
+            with st.spinner("ҚР Заңнамасына сай ресми жауап дайындалуда..."):
                 try:
-                    full_prompt = "Сіз Қазақстан Республикасының ресми кибер-заңгерісіз. ҚР Заңнамаларына сай жауап беріңіз:\n" + user_input
+                    full_prompt = "Сіз Қазақстан Республикасының ресми кибер-заңгерісіз. ҚР АК, ҚК және ӘҚБтК баптарына сүйене отырып, ресми заңгерлік тілде жауап беріңіз:\n" + user_input
                     reply = call_gemini_safe(full_prompt)
                     st.write(reply)
                 except Exception as err:
