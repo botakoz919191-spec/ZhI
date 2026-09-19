@@ -201,7 +201,7 @@ def analyze_with_gemini_vision(pil_img):
     prompt = (
         "Сіз — жоғары дәрежелі цифрлық сарапшысыз. Мына ережелерді қатаң сақтаңыз:\n"
         "1. Суретті мұқият талдаңыз: бұл ЖИ (Canva AI, Midjourney, DALL-E) арқылы жасалған инфографика, плакат, слайд, графика ма, әлде шынайы фотокамера түсірілімі ме?\n"
-        "2. Егер суретте инфографика, компьютерлік графика, ЖИ генерациялаған оқу куралы немесе иллюстрация болса, оны 'Жасанды интеллект немесе графика' деп бағалап, ықтималдығын жоғары (70-95%) деп белгілеңіз.\n"
+        "2. Егер суретте инфографика, компьютерлік графика, ЖИ генерациялаған оқу құралы немесе иллюстрация болса, оны 'Жасанды интеллект немесе графика' деп бағалап, ықтималдығын жоғары (70-95%) деп белгілеңіз.\n"
         "3. Бас әріптерді (CAPS LOCK) барлық сөзге қолданбаңыз! Тек сөйлем басында ғана орфографиялық норманы сақтаңыз.\n\n"
         "Формат:\n"
         "SCORE: [0-100 аралығында ЖИ/Графика маркері]\n"
@@ -360,7 +360,6 @@ with tab1:
     if media_type == "Фотосурет / Скриншот":
         uploaded_file = st.file_uploader("Тексеретін суретті жүктеңіз (JPG, PNG)", type=["jpg", "jpeg", "png"])
         if uploaded_file:
-            # 🖼️ СУРЕТТІ КІШКЕНТАЙ / ЫҚШАМ КӨРСЕТУ
             col_img1, col_img2 = st.columns([1, 1])
             with col_img1:
                 st.image(uploaded_file, caption="Жүктелген сурет", width=380)
@@ -374,20 +373,65 @@ with tab1:
                         score2, verdict, reason = analyze_with_gemini_vision(pil_img)
                         pct = max(score1, score2)
 
-                        if pct >= 45.0 or "ЖАСАНДЫ" in verdict.upper() or "ИНИ" in verdict.upper():
-                            st.markdown(f'<div class="verdict-ai">⚠️ Сараптама актісі: Бұл файл жасанды интеллект (AI/Инфографика) арқылы жасалған немесе өңделген! (Ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
-                        else:
-                            st.markdown(f'<div class="verdict-real">✅ Сараптама актісі: Бұл реалды камераға түсірілген шынайы фотосурет! (ЖИ қаупі: {pct}%)</div>', unsafe_allow_html=True)
+                        advice = get_custom_legal_advice(pil_img, "сурет", reason)
 
-                        st.info(f"🔍 **Сюжеттік сараптама қорытындысы:**\n\n{reason}")
-                        
-                        st.markdown("---")
-                        st.markdown("### ⚖️ Сюжет бойынша заңгерлік қорытынды")
-                        with st.spinner("Ресми заңгерлік талдау дайындалуда..."):
-                            advice = get_custom_legal_advice(pil_img, "сурет", reason)
-                            st.markdown(advice)
+                        st.session_state["photo_analysis"] = {
+                            "pct": pct,
+                            "verdict": verdict,
+                            "reason": reason,
+                            "advice": advice
+                        }
+
+                        # Сұрақ-жауап чатын сол жерде бірден бастау
+                        st.session_state["photo_chat"] = [
+                            {"role": "assistant", "content": f"⚖️ **Заңгерлік қорытынды дайын:**\n\n{advice}\n\n Осы сараптама бойынша келіспейтін жеріңіз немесе нақтылайтын сұрағыңыз болса, төмендегі өріске бірден жазыңыз:"}
+                        ]
+
                     except Exception as err:
                         st.error(f"Қате орын алды: {err}")
+
+            # Талдау жасалып қойса, нәтижені және астында СРАЗУ СҰРАҚ ҚОЯТЫН ЧАТТЫ көрсету
+            if "photo_analysis" in st.session_state:
+                p_data = st.session_state["photo_analysis"]
+                pct = p_data["pct"]
+                verdict = p_data["verdict"]
+                reason = p_data["reason"]
+
+                if pct >= 45.0 or "ЖАСАНДЫ" in verdict.upper() or "ИНИ" in verdict.upper():
+                    st.markdown(f'<div class="verdict-ai">⚠️ Сараптама актісі: Бұл файл жасанды интеллект (AI/Инфографика) арқылы жасалған немесе өңделген! (Ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="verdict-real">✅ Сараптама актісі: Бұл реалды камераға түсірілген шынайы фотосурет! (ЖИ қаупі: {pct}%)</div>', unsafe_allow_html=True)
+
+                st.info(f"🔍 **Сюжеттік сараптама қорытындысы:**\n\n{reason}")
+                
+                st.markdown("---")
+                st.markdown("### 💬 Осы сараптама бойынша заңгерге бірден сұрақ қою")
+
+                # Чат тарихын көрсету
+                if "photo_chat" in st.session_state:
+                    for msg in st.session_state["photo_chat"]:
+                        with st.chat_message(msg["role"]):
+                            st.markdown(msg["content"])
+
+                # БОЛҒАН САРАПТАМА АСТЫНДАҒЫ ЧАТ
+                if user_q := st.chat_input("Талдау бойынша сұрағыңызды немесе пікіріңізді жазыңыз...", key="photo_chat_input"):
+                    st.session_state["photo_chat"].append({"role": "user", "content": user_q})
+                    with st.chat_message("user"):
+                        st.markdown(user_q)
+
+                    with st.chat_message("assistant"):
+                        with st.spinner("Заңгер жауабы дайындалуда..."):
+                            context = (
+                                f"Сурет мазмұны: {reason}\n"
+                                f"Алғашқы заңгерлік кеңес: {p_data['advice']}\n\n"
+                                f"Пайдаланушының осы талдау бойынша сұрағы: {user_q}\n\n"
+                                f"ҚР заңнамасына (АК, ҚК, «Авторлық құқық туралы» Заң) сүйеніп, CAPS LOCK-сыз сауатты жауап беріңіз."
+                            )
+                            ans = call_gemini_safe(context)
+                            if not ans:
+                                ans = "ҚР заңнамасына сай, бұл материалды оқу процесінде еркін пайдалануға болады."
+                            st.markdown(ans)
+                            st.session_state["photo_chat"].append({"role": "assistant", "content": ans})
 
     else:
         uploaded_video = st.file_uploader("Тексеретін видеоны жүктеңіз (MP4, MOV — 50 МБ-қа дейін ұсынылады)", type=["mp4", "mov"])
@@ -396,7 +440,6 @@ with tab1:
             if file_size_mb > 50:
                 st.warning(f"⚠️ Жүктелген видеоның көлемі тым үлкен ({round(file_size_mb, 1)} МБ). 50 МБ-тан аспайтын шағын видеоларды жүктеу ұсынылады.")
 
-            # 🎥 ВИДЕОНЫ ЫҚШАМ КӨРСЕТУ
             col_vid1, col_vid2 = st.columns([1, 1])
             with col_vid1:
                 st.video(uploaded_video)
@@ -410,22 +453,63 @@ with tab1:
                             verdict = res.get("verdict", "")
                             reason = res.get("reason", "")
                             
-                            if pct >= 45.0 or "ЖАСАНДЫ" in verdict.upper():
-                                st.markdown(f'<div class="verdict-ai">⚠️ Сараптама актісі: Видео кадрларында жасанды интеллект (Deepfake/AI) белгілері бар! (Ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
-                            else:
-                                st.markdown(f'<div class="verdict-real">✅ Сараптама актісі: Видео реалды камераға түсірілген шынайы таспа! (ЖИ қаупі: {pct}%)</div>', unsafe_allow_html=True)
+                            advice = get_custom_legal_advice(res["frame_pil"], "видео", reason)
 
-                            st.info(f"🔍 **Видео кадрларының сюжеттік сараптамасы:**\n\n{reason}")
-                            
-                            st.markdown("---")
-                            st.markdown("### ⚖️ Видео сюжеті бойынша заңгерлік қорытынды")
-                            with st.spinner("Ресми заңгерлік кеңес құрастырылуда..."):
-                                advice = get_custom_legal_advice(res["frame_pil"], "видео", reason)
-                                st.markdown(advice)
+                            st.session_state["video_analysis"] = {
+                                "pct": pct,
+                                "verdict": verdict,
+                                "reason": reason,
+                                "advice": advice
+                            }
+
+                            st.session_state["video_chat"] = [
+                                {"role": "assistant", "content": f"⚖️ **Видео бойынша заңгерлік қорытынды:**\n\n{advice}\n\nОсы видео сараптамасына қатысты сұрағыңыз немесе пікіріңіз болса, төмендегі өріске бірден жазыңыз:"}
+                            ]
                         else:
                             st.error(res["error"])
                     except Exception as err:
                         st.error(f"Қате орын алды: {err}")
+
+            # Видео талдауы жасалып қойса, тура астынан чатты шығару
+            if "video_analysis" in st.session_state:
+                v_data = st.session_state["video_analysis"]
+                pct = v_data["pct"]
+                verdict = v_data["verdict"]
+                reason = v_data["reason"]
+
+                if pct >= 45.0 or "ЖАСАНДЫ" in verdict.upper():
+                    st.markdown(f'<div class="verdict-ai">⚠️ Сараптама актісі: Видео кадрларында жасанды интеллект (Deepfake/AI) белгілері бар! (Ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="verdict-real">✅ Сараптама актісі: Видео реалды камераға түсірілген шынайы таспа! (ЖИ қаупі: {pct}%)</div>', unsafe_allow_html=True)
+
+                st.info(f"🔍 **Видео кадрларының сюжеттік сараптамасы:**\n\n{reason}")
+                
+                st.markdown("---")
+                st.markdown("### 💬 Видео талдау бойынша заңгерге бірден сұрақ қою")
+
+                if "video_chat" in st.session_state:
+                    for msg in st.session_state["video_chat"]:
+                        with st.chat_message(msg["role"]):
+                            st.markdown(msg["content"])
+
+                if user_q := st.chat_input("Видео сараптамасы бойынша сұрағыңызды жазыңыз...", key="video_chat_input"):
+                    st.session_state["video_chat"].append({"role": "user", "content": user_q})
+                    with st.chat_message("user"):
+                        st.markdown(user_q)
+
+                    with st.chat_message("assistant"):
+                        with st.spinner("Заңгер жауабы дайындалуда..."):
+                            context = (
+                                f"Видео мазмұны: {reason}\n"
+                                f"Алғашқы заңгерлік кеңес: {v_data['advice']}\n\n"
+                                f"Пайдаланушының осы видео бойынша сұрағы: {user_q}\n\n"
+                                f"ҚР заңнамасына сүйеніп, CAPS LOCK-сыз сауатты жауап беріңіз."
+                            )
+                            ans = call_gemini_safe(context)
+                            if not ans:
+                                ans = "ҚР заңнамасына сай бұл видео бойынша заң бұзушылық жок."
+                            st.markdown(ans)
+                            st.session_state["video_chat"].append({"role": "assistant", "content": ans})
 
 with tab2:
     st.markdown("### 📝 Мәтінді ChatGPT-ге тексеру")
@@ -438,15 +522,42 @@ with tab2:
                     text = call_gemini_safe(prompt)
                     if not text:
                         text = "Мәтінде нейрожелілік алгоритмдерге тән қайталанатын синтаксистік құрылымдар зерттелді."
-                    st.info(text)
+                    
+                    st.session_state["text_res"] = text
+                    st.session_state["text_chat"] = [
+                        {"role": "assistant", "content": f"📝 **Мәтін сараптамасы дайын:**\n\n{text}\n\nОсы мәтін сараптамасына қатысты қосымша сұрағыңыз болса, төменге жазыңыз:"}
+                    ]
                 except Exception as err:
                     st.error(f"Қате: {err}")
+
+    if "text_res" in st.session_state:
+        st.info(st.session_state["text_res"])
+        st.markdown("---")
+        st.markdown("### 💬 Мәтін сараптамасы бойынша диалог")
+
+        if "text_chat" in st.session_state:
+            for msg in st.session_state["text_chat"]:
+                with st.chat_message(msg["role"]):
+                    st.markdown(msg["content"])
+
+        if user_q := st.chat_input("Мәтін сараптамасы бойынша сұрағыңызды жазыңыз...", key="text_chat_input"):
+            st.session_state["text_chat"].append({"role": "user", "content": user_q})
+            with st.chat_message("user"):
+                st.markdown(user_q)
+
+            with st.chat_message("assistant"):
+                with st.spinner("Жауап дайындалуда..."):
+                    context = f"Мәтін сараптамасы: {st.session_state['text_res']}\n\nПайдаланушы сұрағы: {user_q}\n\nҚР заңдары мен стилистика бойынша сауатты жауап беріңіз."
+                    ans = call_gemini_safe(context)
+                    if not ans:
+                        ans = "Бұл мәтін бойынша қосымша заңгерлік талаптар сақталған."
+                    st.markdown(ans)
+                    st.session_state["text_chat"].append({"role": "assistant", "content": ans})
 
 with tab3:
     st.markdown("### 💬 Онлайн ҚР кибер-заңгері")
     st.caption("Кез келген форматында сұрақ қоя аласыз. Заңгер сіздің сұрағыңызды түсініп, сауатты жауап береді.")
 
-    # Чат тарихи
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {
@@ -459,8 +570,7 @@ with tab3:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Кез келген сұрақты қабылдап, нақты жауап беру
-    if user_input := st.chat_input("Сұрағыңызды жазыңыз..."):
+    if user_input := st.chat_input("Сұрағыңызды жазыңыз...", key="general_chat_input"):
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
             st.markdown(user_input)
