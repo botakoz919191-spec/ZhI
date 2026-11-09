@@ -1,6 +1,4 @@
 import streamlit as st
-import requests
-import json
 import time
 from PIL import Image
 import google.generativeai as genai
@@ -62,10 +60,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 🗝️ ИНИЦИАЛИЗАЦИЯ КЛЮЧЕЙ
+# 🗝️ ИНИЦИАЛИЗАЦИЯ КЛЮЧА
 # =========================================================
-SIGHTENGINE_USER = st.secrets.get("SIGHTENGINE_USER", "1282198950")
-SIGHTENGINE_SECRET = st.secrets.get("SIGHTENGINE_SECRET", "VFvoLLmm7Z97MU95LddGTbuNrhhYuZng")
 GEMINI_KEY = st.secrets.get("GEMINI_KEY", "")
 
 if GEMINI_KEY:
@@ -108,29 +104,15 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
 
     return "⚠️ API лимиті немесе байланыс қатесі орын алды. Бірнеше секунд күтіп, қайта басып көріңіз."
 
-def analyze_image_sightengine(image_bytes):
-    url = 'https://api.sightengine.com/1.0/check.json'
-    params = {'models': 'genai', 'api_user': SIGHTENGINE_USER, 'api_secret': SIGHTENGINE_SECRET}
-    files = {'media': image_bytes}
-    try:
-        res = requests.post(url, files=files, data=params, timeout=10)
-        out = json.loads(res.text)
-        if out.get('status') == 'success':
-            score = out.get('type', {}).get('ai_generated', 0)
-            return {"success": True, "percentage": round(score * 100, 2)}
-        return {"success": False, "error": "Анықтау қатесі"}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
 def analyze_with_gemini_vision(pil_img):
     prompt = (
         "Мына суретті мұқият талдап бер:\n"
         "1. Бұл ЖИ (Canva, Midjourney), инфографика, оқулық материалы, компьютерлік графика ма, әлде камерадан түсірілген реалды фото ма?\n"
         "2. Не себепті олай бағалағаныңды қысқаша түсіндір.\n\n"
         "Формат:\n"
-        "SCORE: [0-100]\n"
-        "VERDICT: [Реалды камера немесе Жасанды интеллект]\n"
-        "REASON: [Сурет мазмұнының сипаттамасы]"
+        "SCORE: [0-100 (ЖИ жасағанына сенімділік пайызы)]\n"
+        "VERDICT: [Реалды камера немесе Жасанды интеллект / Графика]\n"
+        "REASON: [Сурет мазмұны мен түпнұсқалығының сипаттамасы]"
     )
     res_text = call_gemini_chat("Сіз цифрлық сарапшысыз.", [], prompt, pil_img)
     
@@ -161,16 +143,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 tab1, tab2, tab3 = st.tabs([
-    "🖼️ / 🎥 Цифрлық сараптама (ЖИ & Камера)", 
-    "📝 Мәтін сараптамасы (ChatGPT)", 
+    "🖼️ / 🎥 Цифрлық сараптама (Gemini AI)", 
+    "📝 Мәтін сараптамасы", 
     "💬 Онлайн ҚР кибер-заңгері"
 ])
 
 # ---------------------------------------------------------
-# TAB 1: СУРЕТ ЖӘНЕ ВИДЕО САРАПТАМАСЫ
+# TAB 1: СУРЕТ ЖӘНЕ ВИДЕО САРАПТАМАСЫ (Тек Gemini арқылы)
 # ---------------------------------------------------------
 with tab1:
-    st.markdown("### 🖼️ Сурет немесе 🎥 видеоны цифрлық тексеру")
+    st.markdown("### 🖼️ Сурет немесе 🎥 видеоны Gemini арқылы тексеру")
     media_type = st.radio("Файл түрін таңдаңыз:", ["Фотосурет / Скриншот", "Видеофайл"], horizontal=True)
     
     if media_type == "Фотосурет / Скриншот":
@@ -178,17 +160,14 @@ with tab1:
         if uploaded_file:
             st.image(uploaded_file, caption="Жүктелген сурет", width=220)
 
-            if st.button("🔍 Сюжеті мен түпнұсқалығын сараптау"):
-                with st.spinner("Сурет оңтайландырылып, талдануда..."):
+            if st.button("🔍 Суретті толық сараптау"):
+                with st.spinner("Gemini арқылы талдануда..."):
                     try:
                         pil_img = Image.open(uploaded_file)
-                        res_s = analyze_image_sightengine(uploaded_file.getvalue())
-                        score1 = res_s.get("percentage", 0.0) if res_s.get("success") else 0.0
-                        score2, verdict, reason = analyze_with_gemini_vision(pil_img)
-                        pct = max(score1, score2)
+                        score, verdict, reason = analyze_with_gemini_vision(pil_img)
 
                         st.session_state["photo_data"] = {
-                            "pct": pct,
+                            "pct": score,
                             "verdict": verdict,
                             "reason": reason,
                             "img": pil_img
@@ -205,7 +184,7 @@ with tab1:
                 pct = p_data["pct"]
                 verdict = p_data["verdict"]
 
-                if pct >= 45.0 or "ЖАСАНДЫ" in verdict.upper():
+                if pct >= 45.0 or "ЖАСАНДЫ" in verdict.upper() or "ГРАФИКА" in verdict.upper():
                     st.markdown(f'<div class="verdict-ai">⚠️ Сараптама актісі: ЖИ / Графика / Инфографика белгілері анықталды! ({pct}%)</div>', unsafe_allow_html=True)
                 else:
                     st.markdown(f'<div class="verdict-real">✅ Сараптама актісі: Реалды камера фотосы! ({pct}%)</div>', unsafe_allow_html=True)
@@ -225,7 +204,6 @@ with tab1:
 
                     with st.chat_message("assistant"):
                         with st.spinner("Өңделуде..."):
-                            # Нақты жеке жауап беруге арналған қатаң нұсқау
                             sys_p = (
                                 f"Сіз білікті ҚР кибер-заңгерісіз. Сараптама нәтижесі / Сурет сипаттамасы: {p_data['reason']}.\n"
                                 "МАҢЫЗДЫ ЕРЕЖЕ: Пайдаланушының нақты қойған сұрағына (авторлық құқық, өз еңбегі, суретте не берілгені немесе сабаққа қолдану туралы) "
@@ -265,12 +243,12 @@ with tab1:
 # TAB 2: МӘТІН САРАПТАМАСЫ
 # ---------------------------------------------------------
 with tab2:
-    st.markdown("### 📝 Мәтінді ChatGPT-ге тексеру")
+    st.markdown("### 📝 Мәтінді тексеру")
     text_input = st.text_area("Тексеретін мәтінді осы жерге енгізіңіз:", height=150)
     if st.button("🔍 Мәтінді сараптау"):
         if text_input.strip():
             with st.spinner("Мәтін талдануда..."):
-                sys_p = "Сіз мәтінді сараптаушысыз. Мәтіннің ChatGPT немесе адам арқылы жазылғанын анықтап беріңіз."
+                sys_p = "Сіз мәтінді сараптаушысыз. Мәтіннің жасанды түрде жазылғанын немесе адам тарапынан жазылғанын талдап беріңіз."
                 ans = call_gemini_chat(sys_p, [], f"Мәтінді талдап бер: {text_input}")
                 st.info(ans)
 
