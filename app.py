@@ -17,18 +17,20 @@ st.markdown("""
     .stApp {
         background: linear-gradient(135deg, #edf5ff 0%, #dbeafe 50%, #eff6ff 100%) !important;
     }
+    
+    /* Жоғарғы панель стилі */
     .top-navbar {
-        background-color: #ffffff;
-        border: 1px solid #cbd5e1;
-        padding: 10px 20px;
-        border-radius: 10px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 2px solid #cbd5e1;
+        padding: 12px 20px;
+        border-radius: 12px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         font-size: 13px;
         color: #1e293b;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
     .top-navbar a {
         color: #1d4ed8;
@@ -38,6 +40,15 @@ st.markdown("""
     .top-navbar a:hover {
         text-decoration: underline;
     }
+    .badge-num {
+        background-color: #fee2e2;
+        color: #991b1b;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-weight: 800;
+        border: 1px solid #fecaca;
+    }
+
     .header-banner {
         background: linear-gradient(135deg, #0f2b5c 0%, #1e40af 60%, #1d4ed8 100%);
         color: white;
@@ -45,6 +56,7 @@ st.markdown("""
         border-radius: 15px;
         margin-bottom: 20px;
         border-bottom: 5px solid #d97706;
+        box-shadow: 0 4px 10px rgba(30, 64, 175, 0.2);
     }
     .header-title { font-size: 26px; font-weight: 800; color: #ffffff; margin: 0; }
     .header-subtitle { font-size: 14px; color: #e0f2fe; margin-top: 4px; }
@@ -57,21 +69,22 @@ st.markdown("""
         padding: 10px 20px !important;
         border-radius: 8px !important;
         width: 100%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .verdict-ai {
         background-color: #fef2f2; border: 2px solid #ef4444; color: #991b1b;
-        padding: 12px; border-radius: 10px; font-weight: bold; margin-bottom: 12px;
+        padding: 14px; border-radius: 10px; font-weight: bold; margin-bottom: 12px;
     }
     .verdict-real {
         background-color: #f0fdf4; border: 2px solid #22c55e; color: #166534;
-        padding: 12px; border-radius: 10px; font-weight: bold; margin-bottom: 12px;
+        padding: 14px; border-radius: 10px; font-weight: bold; margin-bottom: 12px;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 🏛️ ЖОҒАРҒЫ БӨЛІК (РЕМИ МӘЛІМЕТТЕР ЖӘНЕ СЕНІМ ТЕЛЕФОНДАРЫ)
+# 🏛️ ЖОҒАРҒЫ ПАНЕЛЬ (ӘДІЛЕТ МИНИСТРЛІГІ ЖӘНЕ СЕНІМ ТЕЛЕФОНДАРЫ)
 # =========================================================
 st.markdown("""
 <div class="top-navbar">
@@ -79,7 +92,11 @@ st.markdown("""
         🏛️ <b>Әділет министрлігі:</b> <a href="https://www.gov.kz/memleket/entities/adilet" target="_blank">gov.kz/adilet</a>
     </div>
     <div>
-        📞 <b>Бірыңғай сенім телефондары:</b> <span style="color: #b91c1c; font-weight: bold;">1414</span> (Байланыс орталығы) | <span style="color: #b91c1c; font-weight: bold;">102</span> (Киберполиция / Полиция)
+        🛡️ <b>Шұғыл сенім телефондары:</b> 
+        <span style="margin-left: 5px;">📞 Полиция: <span class="badge-num">102</span></span> | 
+        <span style="margin-left: 5px;">☎️ Байланыс орталығы: <span class="badge-num">1414</span></span> | 
+        <span style="margin-left: 5px;">🆘 Балалар құқығы: <span class="badge-num">111</span></span> | 
+        <span style="margin-left: 5px;">⛑️ Тұрмыстық зорлық-зомбылыққа қарсы: <span class="badge-num">150</span></span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -101,7 +118,6 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
     if not GEMINI_KEY:
         return "⚠️ Gemini API кілті (GEMINI_KEY) Streamlit Secrets бөлімінде көрсетілмеген!"
 
-    # gemini-2.5-flash немесе заманауи модельдерді қолдану арқылы лимит қателерін азайтамыз
     models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro']
     prepared_img = compress_image(pil_img) if pil_img is not None else None
 
@@ -115,7 +131,7 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
                     full_prompt += f"{msg['role'].upper()}: {msg['content']}\n"
                 
                 full_prompt += f"\nПАЙДАЛАНУШЫ СҰРАҒЫ: {user_new_msg}\n"
-                full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Шаблон қолданбай, әрбір деталіне үңіліп, нақты, терең әрі кәсіби заңгерлік/сараптамалық жауап бер."
+                full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Шаблон қолданбай, әрбір деталіне терең үңіліп, нақты, жан-жақты әрі кәсіби заңгерлік/сараптамалық жауап бер."
 
                 contents = [full_prompt]
                 if prepared_img is not None:
@@ -128,15 +144,15 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
                 time.sleep(2)
                 continue
 
-    return "⚠️ API лимиті таусылды немесе уақытша байланыс қатесі орын алды. Google AI Studio жүйесінде Pay-as-you-go режимін қосып, картаңызды тіркеңіз."
+    return "⚠️ API лимиті таусылды немесе байланыс қатесі орын алды. Google AI Studio жүйесінде Pay-as-you-go режимін қосып, картаңызды тіркеңіз."
 
 def analyze_with_gemini_vision(pil_img):
     prompt = (
-        "Сіз кәсіби цифрлық криминалист пен кибер-заңгерсіз. Мына суреттің әрбір бөлшегін, деталін, пиксельдерін, жарық түсуін, "
+        "Сіз тәжірибелі цифрлық криминалист пен кибер-заңгерсіз. Мына суреттің әрбір бөлшегін, деталін, пиксельдерін, жарық түсуін, "
         "мәтіндік қабаттарын немесе графикалық элементтерін аса мұқиятпен терең зерттеп шығыңыз:\n"
         "1. Бұл камерадан түсірілген шынайы фото ма, әлде ЖИ арқылы генерацияланған ба, Canva/Photoshop арқылы өңделген графика ма? Пайызын нақты көрсетіңіз.\n"
         "2. Суреттің барлық деталіне сипаттама беріп, авторлық құқық немесе заң бұзушылық белгілерін жан-жақты талдаңыз.\n\n"
-        "МӘДБЕР ФОРМАТЫ:\n"
+        "МІНДЕТТІ ФОРМАТ:\n"
         "SCORE: [0-100 аралығындағы нақты пайызы]\n"
         "VERDICT: [Реалды камера фотосы немесе Жасанды интеллект / Өңделген графика]\n"
         "REASON: [Әр деталіне тоқталған толық, терең және сараптамалық қорытынды]"
@@ -160,7 +176,7 @@ def analyze_with_gemini_vision(pil_img):
     return score, verdict, reason
 
 # =========================================================
-# 🏛️ ИНТЕРФЕЙС БАННЕРІ
+# 🏛️ БАННЕР
 # =========================================================
 st.markdown("""
 <div class="header-banner">
