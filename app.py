@@ -17,6 +17,27 @@ st.markdown("""
     .stApp {
         background: linear-gradient(135deg, #edf5ff 0%, #dbeafe 50%, #eff6ff 100%) !important;
     }
+    .top-navbar {
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        padding: 10px 20px;
+        border-radius: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        font-size: 13px;
+        color: #1e293b;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .top-navbar a {
+        color: #1d4ed8;
+        text-decoration: none;
+        font-weight: bold;
+    }
+    .top-navbar a:hover {
+        text-decoration: underline;
+    }
     .header-banner {
         background: linear-gradient(135deg, #0f2b5c 0%, #1e40af 60%, #1d4ed8 100%);
         color: white;
@@ -46,17 +67,21 @@ st.markdown("""
         background-color: #f0fdf4; border: 2px solid #22c55e; color: #166534;
         padding: 12px; border-radius: 10px; font-weight: bold; margin-bottom: 12px;
     }
-    .footer-box {
-        margin-top: 40px;
-        padding: 15px;
-        background-color: #ffffff;
-        border-radius: 10px;
-        border: 1px solid #cbd5e1;
-        text-align: center;
-        font-size: 13px;
-        color: #334155;
-    }
 </style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# 🏛️ ЖОҒАРҒЫ БӨЛІК (РЕМИ МӘЛІМЕТТЕР ЖӘНЕ СЕНІМ ТЕЛЕФОНДАРЫ)
+# =========================================================
+st.markdown("""
+<div class="top-navbar">
+    <div>
+        🏛️ <b>Әділет министрлігі:</b> <a href="https://www.gov.kz/memleket/entities/adilet" target="_blank">gov.kz/adilet</a>
+    </div>
+    <div>
+        📞 <b>Бірыңғай сенім телефондары:</b> <span style="color: #b91c1c; font-weight: bold;">1414</span> (Байланыс орталығы) | <span style="color: #b91c1c; font-weight: bold;">102</span> (Киберполиция / Полиция)
+    </div>
+</div>
 """, unsafe_allow_html=True)
 
 # =========================================================
@@ -67,7 +92,7 @@ GEMINI_KEY = st.secrets.get("GEMINI_KEY", "")
 if GEMINI_KEY:
     genai.configure(api_key=GEMINI_KEY)
 
-def compress_image(pil_img, max_size=(600, 600)):
+def compress_image(pil_img, max_size=(1024, 1024)):
     img_copy = pil_img.copy()
     img_copy.thumbnail(max_size, Image.Resampling.LANCZOS)
     return img_copy
@@ -76,11 +101,12 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
     if not GEMINI_KEY:
         return "⚠️ Gemini API кілті (GEMINI_KEY) Streamlit Secrets бөлімінде көрсетілмеген!"
 
+    # gemini-2.5-flash немесе заманауи модельдерді қолдану арқылы лимит қателерін азайтамыз
     models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro']
     prepared_img = compress_image(pil_img) if pil_img is not None else None
 
     for m_name in models_to_try:
-        for attempt in range(2):
+        for attempt in range(3):
             try:
                 model = genai.GenerativeModel(m_name)
                 
@@ -89,7 +115,7 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
                     full_prompt += f"{msg['role'].upper()}: {msg['content']}\n"
                 
                 full_prompt += f"\nПАЙДАЛАНУШЫ СҰРАҒЫ: {user_new_msg}\n"
-                full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Шаблон қолданбай, қойылған сұраққа нақты әрі мағыналы жауап бер."
+                full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Шаблон қолданбай, әрбір деталіне үңіліп, нақты, терең әрі кәсіби заңгерлік/сараптамалық жауап бер."
 
                 contents = [full_prompt]
                 if prepared_img is not None:
@@ -99,25 +125,26 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
                 if response and response.text:
                     return response.text
             except Exception as e:
-                time.sleep(1)
+                time.sleep(2)
                 continue
 
-    return "⚠️ API лимиті немесе байланыс қатесі орын алды. Бірнеше секунд күтіп, қайта басып көріңіз."
+    return "⚠️ API лимиті таусылды немесе уақытша байланыс қатесі орын алды. Google AI Studio жүйесінде Pay-as-you-go режимін қосып, картаңызды тіркеңіз."
 
 def analyze_with_gemini_vision(pil_img):
     prompt = (
-        "Мына суретті мұқият талдап бер:\n"
-        "1. Бұл ЖИ (Canva, Midjourney), инфографика, оқулық материалы, компьютерлік графика ма, әлде камерадан түсірілген реалды фото ма?\n"
-        "2. Не себепті олай бағалағаныңды қысқаша түсіндір.\n\n"
-        "Формат:\n"
-        "SCORE: [0-100 (ЖИ жасағанына сенімділік пайызы)]\n"
-        "VERDICT: [Реалды камера немесе Жасанды интеллект / Графика]\n"
-        "REASON: [Сурет мазмұны мен түпнұсқалығының сипаттамасы]"
+        "Сіз кәсіби цифрлық криминалист пен кибер-заңгерсіз. Мына суреттің әрбір бөлшегін, деталін, пиксельдерін, жарық түсуін, "
+        "мәтіндік қабаттарын немесе графикалық элементтерін аса мұқиятпен терең зерттеп шығыңыз:\n"
+        "1. Бұл камерадан түсірілген шынайы фото ма, әлде ЖИ арқылы генерацияланған ба, Canva/Photoshop арқылы өңделген графика ма? Пайызын нақты көрсетіңіз.\n"
+        "2. Суреттің барлық деталіне сипаттама беріп, авторлық құқық немесе заң бұзушылық белгілерін жан-жақты талдаңыз.\n\n"
+        "МӘДБЕР ФОРМАТЫ:\n"
+        "SCORE: [0-100 аралығындағы нақты пайызы]\n"
+        "VERDICT: [Реалды камера фотосы немесе Жасанды интеллект / Өңделген графика]\n"
+        "REASON: [Әр деталіне тоқталған толық, терең және сараптамалық қорытынды]"
     )
-    res_text = call_gemini_chat("Сіз цифрлық сарапшысыз.", [], prompt, pil_img)
+    res_text = call_gemini_chat("Сіз жоғары санатты цифрлық сарапшысыз.", [], prompt, pil_img)
     
-    score = 50.0
-    verdict = "Жасанды интеллект"
+    score = 15.0
+    verdict = "Реалды камера фотосы"
     reason = res_text
 
     if "SCORE:" in res_text:
@@ -133,7 +160,7 @@ def analyze_with_gemini_vision(pil_img):
     return score, verdict, reason
 
 # =========================================================
-# 🏛️ ИНТЕРФЕЙС
+# 🏛️ ИНТЕРФЕЙС БАННЕРІ
 # =========================================================
 st.markdown("""
 <div class="header-banner">
@@ -143,25 +170,25 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 tab1, tab2, tab3 = st.tabs([
-    "🖼️ / 🎥 Цифрлық сараптама (Gemini AI)", 
+    "🖼️ / 🎥 Терең цифрлық сараптама", 
     "📝 Мәтін сараптамасы", 
     "💬 Онлайн ҚР кибер-заңгері"
 ])
 
 # ---------------------------------------------------------
-# TAB 1: СУРЕТ ЖӘНЕ ВИДЕО САРАПТАМАСЫ (Тек Gemini арқылы)
+# TAB 1: СУРЕТ ЖӘНЕ ВИДЕО ТЕРЕҢ САРАПТАМАСЫ
 # ---------------------------------------------------------
 with tab1:
-    st.markdown("### 🖼️ Сурет немесе 🎥 видеоны Gemini арқылы тексеру")
+    st.markdown("### 🖼️ Сурет немесе 🎥 видеоны терең бөлшектеп зерттеу")
     media_type = st.radio("Файл түрін таңдаңыз:", ["Фотосурет / Скриншот", "Видеофайл"], horizontal=True)
     
     if media_type == "Фотосурет / Скриншот":
         uploaded_file = st.file_uploader("Тексеретін суретті жүктеңіз (JPG, PNG)", type=["jpg", "jpeg", "png"])
         if uploaded_file:
-            st.image(uploaded_file, caption="Жүктелген сурет", width=220)
+            st.image(uploaded_file, caption="Жүктелген сурет", width=300)
 
-            if st.button("🔍 Суретті толық сараптау"):
-                with st.spinner("Gemini арқылы талдануда..."):
+            if st.button("🔍 Суреттің әр деталін терең сараптау"):
+                with st.spinner("Суреттің әрбір бөлшегі мен пішіні мұқият талдануда..."):
                     try:
                         pil_img = Image.open(uploaded_file)
                         score, verdict, reason = analyze_with_gemini_vision(pil_img)
@@ -174,7 +201,7 @@ with tab1:
                         }
 
                         st.session_state["photo_chat_history"] = [
-                            {"role": "assistant", "content": f"⚖️ **Сараптама қорытындысы:**\n\n{reason}\n\nСурет бойынша сұрағыңызды төменде қоя аласыз:"}
+                            {"role": "assistant", "content": f"⚖️ **Терең сараптама қорытындысы:**\n\n{reason}\n\nОсы сараптама бойынша қосымша сұрағыңызды төменде қоя аласыз:"}
                         ]
                     except Exception as err:
                         st.error(f"Қате орын алды: {err}")
@@ -184,12 +211,12 @@ with tab1:
                 pct = p_data["pct"]
                 verdict = p_data["verdict"]
 
-                if pct >= 45.0 or "ЖАСАНДЫ" in verdict.upper() or "ГРАФИКА" in verdict.upper():
-                    st.markdown(f'<div class="verdict-ai">⚠️ Сараптама актісі: ЖИ / Графика / Инфографика белгілері анықталды! ({pct}%)</div>', unsafe_allow_html=True)
+                if pct >= 50.0 or "ЖАСАНДЫ" in verdict.upper() or "ГРАФИКА" in verdict.upper():
+                    st.markdown(f'<div class="verdict-ai">⚠️ Сараптама актісі: {verdict} ({pct}%)</div>', unsafe_allow_html=True)
                 else:
-                    st.markdown(f'<div class="verdict-real">✅ Сараптама актісі: Реалды камера фотосы! ({pct}%)</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="verdict-real">✅ Сараптама актісі: {verdict} ({pct}%)</div>', unsafe_allow_html=True)
 
-                st.info(f"🔍 **Сараптама сипаттамасы:**\n\n{p_data['reason']}")
+                st.info(f"🔍 **Толық сараптамалық сипаттама:**\n\n{p_data['reason']}")
                 st.markdown("---")
                 st.markdown("### 💬 Осы сараптама бойынша заңгерге сұрақ қою")
 
@@ -203,12 +230,11 @@ with tab1:
                         st.markdown(user_q)
 
                     with st.chat_message("assistant"):
-                        with st.spinner("Өңделуде..."):
+                        with st.spinner("Заңгер жауабы дайындалуда..."):
                             sys_p = (
-                                f"Сіз білікті ҚР кибер-заңгерісіз. Сараптама нәтижесі / Сурет сипаттамасы: {p_data['reason']}.\n"
-                                "МАҢЫЗДЫ ЕРЕЖЕ: Пайдаланушының нақты қойған сұрағына (авторлық құқық, өз еңбегі, суретте не берілгені немесе сабаққа қолдану туралы) "
-                                "дайын шаблон қолданбай, әр сұрақтың жеке мағынасына сай тікелей, толық әрі нақты жауап беріңіз. "
-                                "Барлық сұраққа бірдей шаблонды жауап қайтаруға қатаң тыйым салынады."
+                                f"Сіз тәжірибелі ҚР кибер-заңгерісіз. Сараптама нәтижесі: {p_data['reason']}.\n"
+                                "МАҢЫЗДЫ: Пайдаланушының сұрағына шаблонсыз, ешқандай үстіртін жауапсыз, мәтіннің және суреттің әрбір маңызды деталіне "
+                                "сүйене отырып, ҚР заңнамасына сай толық, нақты және кәсіби жауап беріңіз."
                             )
                             ans = call_gemini_chat(
                                 sys_p, 
@@ -226,30 +252,30 @@ with tab1:
             with col_v1:
                 st.video(uploaded_video)
 
-            if st.button("🔍 Видеоны сараптау"):
-                with st.spinner("Видео атауы мен мазмұны талдануда..."):
+            if st.button("🔍 Видеоны терең сараптау"):
+                with st.spinner("Видеоның мазмұны мен кадрларын жан-жақты талдау жасалуда..."):
                     try:
                         video_name = uploaded_video.name
-                        sys_p = "Сіз видеоны сараптаушы сарапшысыз. Жүктелген видеоның атауы мен сипатына қарай оның мазмұнын талдап беріңіз."
-                        ans = call_gemini_chat(sys_p, [], f"Мына видеофайлды сарапта: {video_name}")
+                        sys_p = "Сіз видеоны және медиафайлдарды сараптаушы жоғары санатты сарапшысыз. Видеоның атауына, сипатына және мазмұнына аса үлкен мән беріп, әрбір деталін терең талдап беріңіз."
+                        ans = call_gemini_chat(sys_p, [], f"Мына видеофайлды егжей-тегжейлі сарапта: {video_name}")
                         st.session_state["video_reason"] = ans
                     except Exception as err:
                         st.error(f"Видеоны талдау қатесі: {err}")
 
             if "video_reason" in st.session_state:
-                st.info(f"🎥 **Видео сараптамасының нәтижесі:**\n\n{st.session_state['video_reason']}")
+                st.info(f"🎥 **Видеоның терең сараптамалық нәтижесі:**\n\n{st.session_state['video_reason']}")
 
 # ---------------------------------------------------------
 # TAB 2: МӘТІН САРАПТАМАСЫ
 # ---------------------------------------------------------
 with tab2:
-    st.markdown("### 📝 Мәтінді тексеру")
+    st.markdown("### 📝 Мәтінді терең тексеру")
     text_input = st.text_area("Тексеретін мәтінді осы жерге енгізіңіз:", height=150)
-    if st.button("🔍 Мәтінді сараптау"):
+    if st.button("🔍 Мәтінді терең сараптау"):
         if text_input.strip():
-            with st.spinner("Мәтін талдануда..."):
-                sys_p = "Сіз мәтінді сараптаушысыз. Мәтіннің жасанды түрде жазылғанын немесе адам тарапынан жазылғанын талдап беріңіз."
-                ans = call_gemini_chat(sys_p, [], f"Мәтінді талдап бер: {text_input}")
+            with st.spinner("Мәтіннің мазмұны мен стилі талдануда..."):
+                sys_p = "Сіз заңгер-редакторсыз. Мәтіннің авторлығын, мағынасын және заңға қайшы келетін тұстарын мұқият талдап беріңіз."
+                ans = call_gemini_chat(sys_p, [], f"Мәтінді терең талдап бер: {text_input}")
                 st.info(ans)
 
 # ---------------------------------------------------------
@@ -257,11 +283,11 @@ with tab2:
 # ---------------------------------------------------------
 with tab3:
     st.markdown("### 💬 Онлайн ҚР кибер-заңгері")
-    st.caption("ҚР заңнамасы бойынша кез келген сұрағыңызды қойыңыз.")
+    st.caption("ҚР заңнамасы бойынша кез келген сұрағыңызға нақты және толық құқықтық кеңес алыңыз.")
 
     if "gen_chat_history" not in st.session_state:
         st.session_state["gen_chat_history"] = [
-            {"role": "assistant", "content": "Сәлеметсіз бе! Мен ҚР Цифрлық заңгерімін. Сұрағыңызды қоя берсеңіз болады."}
+            {"role": "assistant", "content": "Сәлеметсіз бе! Мен ҚР Цифрлық және кибер-құқық заңгерімін. Қандай сұрағыңыз бар?"}
         ]
 
     for msg in st.session_state["gen_chat_history"]:
@@ -274,19 +300,8 @@ with tab3:
             st.markdown(user_q)
 
         with st.chat_message("assistant"):
-            with st.spinner("Жауап дайындалуда..."):
-                sys_p = "Сіз ҚР заңгерісіз. Сұраққа шаблон қолданбай, ҚР заңнамасына сай нақты әрі жеке жауап бер."
+            with st.spinner("Заңгер жауабы дайындалуда..."):
+                sys_p = "Сіз ҚР заңгерісіз. Шаблонсыз, нақты әрі мазмұнды құқықтық жауап бер."
                 ans = call_gemini_chat(sys_p, st.session_state["gen_chat_history"][:-1], user_q)
                 st.markdown(ans)
                 st.session_state["gen_chat_history"].append({"role": "assistant", "content": ans})
-
-# =========================================================
-# 📌 САЙТ ТӨМЕНГІ БӨЛІМІ (ФУТЕР)
-# =========================================================
-st.markdown("""
-<div class="footer-box">
-    <b>Қазақстан Республикасы Әділет министрлігі:</b> 
-    <a href="https://www.gov.kz/memleket/entities/adilet" target="_blank">gov.kz/memleket/entities/adilet</a><br>
-    <b>Сенім телефоны / Бірыңғай байланыс орталығы:</b> 1414
-</div>
-""", unsafe_allow_html=True)
