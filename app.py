@@ -4,7 +4,7 @@ import tempfile
 import os
 from PIL import Image
 import google.generativeai as genai
-import cv2  # Видеоны кадрларға бөлу үшін OpenCV кітапханасы
+import cv2
 
 st.set_page_config(
     page_title="CyberShield.kz — Цифрлық сараптама порталы",
@@ -65,7 +65,6 @@ def compress_image(pil_img, max_size=(1024, 1024)):
     return img_copy
 
 def extract_frames_from_video(video_file, max_frames=5):
-    """Видеоны уақытша файлға сақтап, OpenCV көмегімен маңызды кадрларды (скриншоттарды) алады"""
     frames = []
     tmp_path = None
     try:
@@ -80,14 +79,11 @@ def extract_frames_from_video(video_file, max_frames=5):
             cap.release()
             return frames
 
-        # Видео ұзындығына қарай кадрларды тең бөліп алу
         step = max(1, total_frames // max_frames)
-        
         for i in range(0, total_frames, step):
             cap.set(cv2.CAP_PROP_POS_FRAMES, i)
             ret, frame = cap.read()
             if ret:
-                # OpenCV (BGR) форматын PIL (RGB) форматына ауыстыру
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 pil_img = Image.fromarray(rgb_frame)
                 frames.append(pil_img)
@@ -95,11 +91,10 @@ def extract_frames_from_video(video_file, max_frames=5):
                 break
         cap.release()
     except Exception as e:
-        st.error(f"Кадрларға бөлу қатесі: {e}")
+        st.error(f"Қате орын алды: {e}")
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
-            
     return frames
 
 def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_imgs=None):
@@ -137,7 +132,7 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_imgs=None):
 
 def analyze_media(pil_imgs):
     prompt = (
-        "Сіз жоғары санатты цифрлық сарапшысыз. Берілген кадрларға (фото/видео скриншоттарына) толық сараптама жасаңыз:\n"
+        "Сіз жоғары санатты цифрлық сарапшысыз. Берілген материалдарға толық сараптама жасаңыз:\n"
         "1. Бұл материалдар Жасанды интеллект (ЖИ) арқылы жасалған ба, монтаждалған бе, жоқ әлде шынайы камера түсірілімі ме?\n"
         "2. ЖИ немесе өңдеу белгілерінің пайыздық көрсеткішін (0-100% аралығындағы SCORE) нақты анықтаңыз.\n"
         "3. Материалдың қай бөлігінде, қандай детальдерде (мысалы: жарық түсу бұрышы, шаш сызықтары, тері текстурасы, пиксельдік ауытқулар) ауытқу немесе монтаж барын нақты көрсетіп сипаттаңыз.\n\n"
@@ -173,97 +168,130 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3 = st.tabs(["🖼️ / 🎥 Медиа сараптамасы", "📝 Мәтін сараптамасы", "💬 Сарапшы консультациясы"])
+# Вкладкалар нақты бөлінді
+tab1, tab2, tab3, tab4 = st.tabs(["🖼️ Фото сараптамасы", "🎥 Видео сараптамасы", "📝 Мәтін сараптамасы", "💬 Сарапшы консультациясы"])
 
 with tab1:
-    st.markdown("### 🔍 Медиа файлды тексеру және сараптау")
-    media_type = st.radio("Файл түрін таңдаңыз:", ["Фотосурет", "Видеофайл (Кадрларға бөліп тексеру)"], horizontal=True)
+    st.markdown("### 🖼️ Фотосуретті тексеру және сараптау")
+    uploaded_photo = st.file_uploader("Фотосуретті жүктеңіз", type=["jpg", "jpeg", "png", "webp", "heic", "bmp", "tiff"], key="photo_upload")
     
-    if media_type == "Фотосурет":
-        uploaded_file = st.file_uploader("Суретті жүктеңіз", type=None)
-        if uploaded_file:
-            try:
-                pil_img = Image.open(uploaded_file)
-                st.image(pil_img, caption="Жүктелген сурет", width=300)
+    if uploaded_photo:
+        try:
+            pil_img = Image.open(uploaded_photo)
+            st.image(pil_img, caption="Жүктелген фотосурет", width=300)
 
-                if st.button("Тексеру"):
-                    with st.spinner("Файл пиксельдері мен параметрлері тексерілуде..."):
-                        score, verdict, reason = analyze_media([pil_img])
-                        st.session_state["media_data"] = {"pct": score, "verdict": verdict, "reason": reason, "imgs": [pil_img], "is_video": False}
-                        st.session_state["media_chat_history"] = [{"role": "assistant", "content": f"⚖️ **Сараптама нәтижесі:**\n\n{reason}\n\nҚосымша сұрақтарыңызды төменде қоя аласыз:"}]
-            except Exception as e:
-                st.error(f"Қате орын алды: {e}")
+            if st.button("Тексеру", key="photo_btn"):
+                with st.spinner("Фото пиксельдері мен параметрлері тексерілуде..."):
+                    score, verdict, reason = analyze_media([pil_img])
+                    st.session_state["photo_data"] = {"pct": score, "verdict": verdict, "reason": reason, "img": pil_img}
+                    st.session_state["photo_chat_history"] = [{"role": "assistant", "content": f"⚖️ **Сараптама нәтижесі:**\n\n{reason}"}]
+        except Exception as e:
+            st.error(f"Қате орын алды: {e}")
 
-    else:
-        uploaded_video = st.file_uploader("Видеоны жүктеңіз", type=None)
-        if uploaded_video:
-            st.video(uploaded_video)
-            if st.button("Сараптау"):
-                with st.spinner("Видео кадрларға (скриншоттарға) бөлініп, ЖИ іздері сарапталуда..."):
-                    frames = extract_frames_from_video(uploaded_video, max_frames=5)
-                    if frames:
-                        st.write(f"📷 Видеодан сәтті {len(frames)} маңызды кадр алынды және тексерілуде:")
-                        cols = st.columns(len(frames))
-                        for idx, frm in enumerate(frames):
-                            with cols[idx]:
-                                st.image(frm, caption=f"Кадр {idx+1}", use_container_width=True)
-
-                        score, verdict, reason = analyze_media(frames)
-                        st.session_state["media_data"] = {"pct": score, "verdict": verdict, "reason": reason, "imgs": frames, "is_video": True}
-                        st.session_state["media_chat_history"] = [{"role": "assistant", "content": f"⚖️ **Видео кадрларының сараптама нәтижесі:**\n\n{reason}\n\nҚосымша сұрақтарыңызды төменде қоя аласыз:"}]
-                    else:
-                        st.error("Видеодан кадрларды бөліп алу мүмкін болмады.")
-
-    if "media_data" in st.session_state:
-        m_data = st.session_state["media_data"]
-        pct = m_data["pct"]
-        verdict = m_data["verdict"]
+    if "photo_data" in st.session_state:
+        p_data = st.session_state["photo_data"]
+        pct = p_data["pct"]
+        verdict = p_data["verdict"]
 
         if pct >= 50.0 or "ЖАСАНДЫ" in verdict.upper() or "МОНТАЖ" in verdict.upper() or "DEEPFAKE" in verdict.upper():
             st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (ЖИ/Монтаж ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
         else:
             st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (Шынайылық көрсеткіші: {100-pct}%)</div>', unsafe_allow_html=True)
 
-        st.info(f"🔍 **Дәлелдер мен сипаттама:**\n\n{m_data['reason']}")
+        st.info(f"🔍 **Дәлелдер мен сипаттама:**\n\n{p_data['reason']}")
         st.markdown("---")
         st.markdown("### 💬 Сарапшымен диалог")
 
-        for msg in st.session_state.get("media_chat_history", []):
+        if "photo_chat_history" not in st.session_state:
+            st.session_state["photo_chat_history"] = []
+
+        for msg in st.session_state["photo_chat_history"]:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
 
-        if user_q := st.chat_input("Сұрағыңызды жазыңыз...", key="media_input"):
-            st.session_state["media_chat_history"].append({"role": "user", "content": user_q})
-            with st.chat_message("user"): st.markdown(user_q)
+        if user_q := st.chat_input("Сұрағыңызды жазыңыз...", key="photo_chat_input"):
+            st.session_state["photo_chat_history"].append({"role": "user", "content": user_q})
+            with st.chat_message("user"):
+                st.markdown(user_q)
             with st.chat_message("assistant"):
                 with st.spinner("Жауап дайындалуда..."):
                     sys_p = "Сіз цифрлық сарапшысыз. Нақты жауап беріңіз."
-                    ans = call_gemini_chat(sys_p, st.session_state["media_chat_history"][:-1], user_q, pil_imgs=m_data.get("imgs"))
+                    ans = call_gemini_chat(sys_p, st.session_state["photo_chat_history"][:-1], user_q, pil_imgs=[p_data["img"]])
                     st.markdown(ans)
-                    st.session_state["media_chat_history"].append({"role": "assistant", "content": ans})
+                    st.session_state["photo_chat_history"].append({"role": "assistant", "content": ans})
 
 with tab2:
+    st.markdown("### 🎥 Видеоны тексеру және сараптау")
+    uploaded_video = st.file_uploader("Видеоны жүктеңіз", type=["mp4", "mov", "avi", "mkv", "webm"], key="video_upload")
+    
+    if uploaded_video:
+        st.video(uploaded_video)
+        if st.button("Сараптау", key="video_btn"):
+            with st.spinner("Видео файл сарапталуда..."):
+                frames = extract_frames_from_video(uploaded_video, max_frames=5)
+                if frames:
+                    score, verdict, reason = analyze_media(frames)
+                    st.session_state["video_data"] = {"pct": score, "verdict": verdict, "reason": reason, "imgs": frames}
+                    st.session_state["video_chat_history"] = [{"role": "assistant", "content": f"⚖️ **Видео сараптамасының нәтижесі:**\n\n{reason}"}]
+                else:
+                    st.error("Видеодан деректерді оқып алу мүмкін болмады.")
+
+    if "video_data" in st.session_state:
+        v_data = st.session_state["video_data"]
+        pct = v_data["pct"]
+        verdict = v_data["verdict"]
+
+        if pct >= 50.0 or "ЖАСАНДЫ" in verdict.upper() or "МОНТАЖ" in verdict.upper() or "DEEPFAKE" in verdict.upper():
+            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (ЖИ/Монтаж ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (Шынайылық көрсеткіші: {100-pct}%)</div>', unsafe_allow_html=True)
+
+        st.info(f"🔍 **Дәлелдер мен сипаттама:**\n\n{v_data['reason']}")
+        st.markdown("---")
+        st.markdown("### 💬 Сарапшымен диалог")
+
+        if "video_chat_history" not in st.session_state:
+            st.session_state["video_chat_history"] = []
+
+        for msg in st.session_state["video_chat_history"]:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+
+        if user_q_v := st.chat_input("Сұрағыңызды жазыңыз...", key="video_chat_input"):
+            st.session_state["video_chat_history"].append({"role": "user", "content": user_q_v})
+            with st.chat_message("user"):
+                st.markdown(user_q_v)
+            with st.chat_message("assistant"):
+                with st.spinner("Жауап дайындалуда..."):
+                    sys_p = "Сіз цифрлық сарапшысыз. Нақты жауап беріңіз."
+                    ans_v = call_gemini_chat(sys_p, st.session_state["video_chat_history"][:-1], user_q_v, pil_imgs=v_data.get("imgs"))
+                    st.markdown(ans_v)
+                    st.session_state["video_chat_history"].append({"role": "assistant", "content": ans_v})
+
+with tab3:
     st.markdown("### 📝 Мәтінді тексеру")
-    text_input = st.text_area("Тексеретін мәтінді енгізіңіз:", height=150)
+    text_input = st.text_area("Тексеретін мәтінді енгізіңіз:", height=150, key="text_input_area")
     if st.button("Тексеру", key="text_btn"):
         if text_input.strip():
             with st.spinner("Талдануда..."):
-                ans = call_gemini_chat("Сіз сарапшы-редакторсыз.", [], f"Мәтінді талдап бер: {text_input}")
-                st.info(ans)
+                ans_t = call_gemini_chat("Сіз сарапшы-редакторсыз.", [], f"Мәтінді талдап бер: {text_input}")
+                st.info(ans_t)
 
-with tab3:
+with tab4:
     st.markdown("### 💬 Сарапшы консультациясы")
     if "gen_chat_history" not in st.session_state:
         st.session_state["gen_chat_history"] = [{"role": "assistant", "content": "Сәлеметсіз бе! Мен цифрлық сараптама саласындағы маманмын. Сұрақтарыңызды қоя аласыз."}]
 
     for msg in st.session_state["gen_chat_history"]:
-        with st.chat_message(msg["role"]): st.markdown(msg["content"])
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-    if user_q := st.chat_input("Сұрағыңызды жазыңыз...", key="gen_chat_input"):
-        st.session_state["gen_chat_history"].append({"role": "user", "content": user_q})
-        with st.chat_message("user"): st.markdown(user_q)
+    if user_q_gen := st.chat_input("Сұрағыңызды жазыңыз...", key="gen_chat_input"):
+        st.session_state["gen_chat_history"].append({"role": "user", "content": user_q_gen})
+        with st.chat_message("user"):
+            st.markdown(user_q_gen)
         with st.chat_message("assistant"):
             with st.spinner("Жауап дайындалуда..."):
-                ans = call_gemini_chat("Сіз цифрлық сарапшысыз.", st.session_state["gen_chat_history"][:-1], user_q)
-                st.markdown(ans)
-                st.session_state["gen_chat_history"].append({"role": "assistant", "content": ans})
+                ans_gen = call_gemini_chat("Сіз цифрлық сарапшысыз.", st.session_state["gen_chat_history"][:-1], user_q_gen)
+                st.markdown(ans_gen)
+                st.session_state["gen_chat_history"].append({"role": "assistant", "content": ans_gen})
