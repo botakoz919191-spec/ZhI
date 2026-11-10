@@ -113,7 +113,7 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_imgs=None):
                 full_prompt += f"{msg['role'].upper()}: {msg['content']}\n"
             
             full_prompt += f"\nПАЙДАЛАНУШЫ СҰРАҒЫ: {user_new_msg}\n"
-            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Нақты деректермен, пайыздық көрсеткіштермен және сараптамалық сипаттамамен жауап бер."
+            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Шаш сызықтарына, бетке, көзге, дене пропорцияларына, киім текстурасына, фонға, жарық түсуіне және бет алмастыру (face-swap/deepfake) іздеріне мұқият үңіліп, нақты пайыздармен және дәлелдермен жауап бер."
 
             contents = [full_prompt]
             if pil_imgs:
@@ -132,17 +132,17 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_imgs=None):
 
 def analyze_media(pil_imgs):
     prompt = (
-        "Сіз жоғары санатты цифрлық сарапшысыз. Берілген материалдарға толық сараптама жасаңыз:\n"
-        "1. Бұл материалдар Жасанды интеллект (ЖИ) арқылы жасалған ба, монтаждалған бе, жоқ әлде шынайы камера түсірілімі ме?\n"
-        "2. ЖИ немесе өңдеу белгілерінің пайыздық көрсеткішін (0-100% аралығындағы SCORE) нақты анықтаңыз.\n"
-        "3. Материалдың қай бөлігінде, қандай детальдерде (мысалы: жарық түсу бұрышы, шаш сызықтары, тері текстурасы, пиксельдік ауытқулар) ауытқу немесе монтаж барын нақты көрсетіп сипаттаңыз.\n\n"
+        "Сіз жоғары санатты цифрлық криминалист-сарапшысыз. Берілген материалдарға (фото/видео кадрларына) ең жоғары мұқияттылықпен сараптама жасаңыз:\n"
+        "1. Шаш сызықтары мен түйісетін орындарын (маңдай, желке, фонмен шектесетін жерлері), бет-әлпетті, мимиканы, тері текстурасын, көздің жарық шағылуын (зрачок рефлексі), дене пропорцияларын, киімнің тігістері мен текстурасын және фонның шынайылығын қатаң тексеріңіз. Біреудің бетін немесе денесін басқа біреуге жапсырған (face-swap / deepfake) немесе ЖИ арқылы жасалған/өңделген іздері бар ма?\n"
+        "2. ЖИ арқылы өңделу немесе монтаждалу көрсеткішін 0-100% аралығындағы нақты SCORE пайызымен көрсетіңіз.\n"
+        "3. Материалдың қай жерінде ауытқу бар екенін (мысалы: киім текстурасының бұрмалануы, шаштың шетіндегі артефактілер, фонның біркелкі еместігі) дөп басып түсіндіріңіз.\n\n"
         "МІНДЕТТІ ФОРМАТ:\n"
         "SCORE: [0-100 аралығындағы пайыз]\n"
         "VERDICT: [Қорытынды сараптамалық вердикт]\n"
-        "REASON: [Нақты дәлелдер мен бөліктерді көрсетіп жасалған сараптамалық сипаттама]"
+        "REASON: [Шаш, бет, көз, дене, киім және фон бойынша жасалған егжей-тегжейлі криминалистикалық сараптама сипаттамасы]"
     )
     
-    sys_msg = "Сіз цифрлық сарапшысыз."
+    sys_msg = "Сіз жоғары санатты цифрлық криминалистсіз."
     res_text = call_gemini_chat(sys_msg, [], prompt, pil_imgs=pil_imgs)
     
     score = 15.0
@@ -181,7 +181,7 @@ with tab1:
             st.image(pil_img, caption="Жүктелген фотосурет", width=300)
 
             if st.button("Тексеру", key="photo_btn"):
-                with st.spinner("Фото пиксельдері мен параметрлері тексерілуде..."):
+                with st.spinner("Фотосуреттің шашы, беті, көзі, денесі, киімі мен фоны мұқият тексерілуде..."):
                     score, verdict, reason = analyze_media([pil_img])
                     st.session_state["photo_data"] = {"pct": score, "verdict": verdict, "reason": reason, "img": pil_img}
                     st.session_state["photo_chat_history"] = [{"role": "assistant", "content": f"⚖️ **Сараптама нәтижесі:**\n\n{reason}"}]
@@ -215,7 +215,7 @@ with tab1:
                 st.markdown(user_q)
             with st.chat_message("assistant"):
                 with st.spinner("Жауап дайындалуда..."):
-                    sys_p = "Сіз цифрлық сарапшысыз. Нақты жауап беріңіз."
+                    sys_p = "Сіз цифрлық криминалистсіз. Нақты жауап беріңіз."
                     ans = call_gemini_chat(sys_p, st.session_state["photo_chat_history"][:-1], user_q, pil_imgs=[p_data["img"]])
                     st.markdown(ans)
                     st.session_state["photo_chat_history"].append({"role": "assistant", "content": ans})
@@ -225,9 +225,11 @@ with tab2:
     uploaded_video = st.file_uploader("Видеоны жүктеңіз", type=["mp4", "mov", "avi", "mkv", "webm"], key="video_upload")
     
     if uploaded_video:
-        st.video(uploaded_video)
+        # Видео көлемі үлкен болмау үшін кішірек өлшемде көрсетіледі
+        st.video(uploaded_video, format="video/mp4", start_time=0)
+        
         if st.button("Сараптау", key="video_btn"):
-            with st.spinner("Видео файл сарапталуда..."):
+            with st.spinner("Видео кадрларының шашы, беті, көзі, киімі мен фоны мұқият талдануда..."):
                 frames = extract_frames_from_video(uploaded_video, max_frames=5)
                 if frames:
                     score, verdict, reason = analyze_media(frames)
@@ -263,7 +265,7 @@ with tab2:
                 st.markdown(user_q_v)
             with st.chat_message("assistant"):
                 with st.spinner("Жауап дайындалуда..."):
-                    sys_p = "Сіз цифрлық сарапшысыз. Нақты жауап беріңіз."
+                    sys_p = "Сіз цифрлық криминалистсіз. Нақты жауап беріңіз."
                     ans_v = call_gemini_chat(sys_p, st.session_state["video_chat_history"][:-1], user_q_v, pil_imgs=v_data.get("imgs"))
                     st.markdown(ans_v)
                     st.session_state["video_chat_history"].append({"role": "assistant", "content": ans_v})
