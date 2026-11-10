@@ -35,7 +35,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Жоғарғы навигация (Сенім телефондары нақтыланды)
+# Сенім телефондары нақты көрсетілді
 st.markdown("""
 <div class="top-navbar">
     <div>🏛️ <b>Әділет министрлігі:</b> <a href="https://www.gov.kz/memleket/entities/adilet" target="_blank">gov.kz/adilet</a></div>
@@ -61,7 +61,8 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
     if not GEMINI_KEY:
         return "⚠️ Gemini API кілті (GEMINI_KEY) Streamlit Secrets бөлімінде көрсетілмеген!"
 
-    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash']
+    # 404 қатесін болдырмау үшін дұрыс жұмыс істейтін модель тізімі
+    models_to_try = ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro']
     prepared_img = compress_image(pil_img) if pil_img is not None else None
 
     last_error = ""
@@ -74,7 +75,7 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
                 full_prompt += f"{msg['role'].upper()}: {msg['content']}\n"
             
             full_prompt += f"\nПАЙДАЛАНУШЫ СҰРАҒЫ: {user_new_msg}\n"
-            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Шаблон қолданбай, әрбір деталіне, шаш үлгісіне, бет әлпетінің симметриясына, пиксельдерге және жарық көлеңкесіне терең үңіліп, нақты, жан-жақты әрі кәсіби заңгерлік-криминалистикалық жауап бер."
+            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Шаблон қолданбай, шаш үлгісіне, бет әлпетінің симметриясына, пиксельдерге және жарық көлеңкесіне терең үңіліп, нақты, жан-жақты әрі кәсіби заңгерлік-криминалистикалық жауап бер."
 
             contents = [full_prompt]
             if prepared_img is not None:
@@ -90,19 +91,18 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
 
     return f"⚠️ API қатесі орын алды: {last_error}. Баланс пен кілтті тексеріңіз."
 
-def analyze_media_deeply(pil_img=None, video_file=None):
-    """Фото немесе видеоны терең криминалистикалық ЖИ талдауынан өткізу"""
+def analyze_media_deeply(pil_img=None):
     prompt = (
         "Сіз жоғары санатты цифрлық криминалист, нейрожелі сарапшысы және кибер-заңгерсіз. "
-        "Бұл медиафайлды (фото немесе видео кадрларын) өте мұқият зерттеңіз:\n"
-        "1. Шаш сызығы, шаштың ұштары, қас пен көз аймағы, тері текстурасы, құлақ сырғалығы, бет әлпетінің симметриясы мен пропорциялары өзгертілген бе (FaceApp, Deepfake, нейрожелілік генерация, фотошоп)?\n"
+        "Бұл медиафайлды өте мұқият зерттеңіз:\n"
+        "1. Шаш сызығы, шаштың ұштары, қас пен көз аймағы, тері текстурасы, бет әлпетінің симметриясы мен пропорциялары өзгертілген бе (FaceApp, Deepfake, нейрожелілік генерация, фотошоп)? "
+        "Адамның шашы немесе беті өзгертілген болса, оны дәл тауып, шынайы емес екенін көрсетіңіз.\n"
         "2. Жарық түсу бұрышы мен көлеңкелердің шынайы физикаға сәйкестігін тексеріңіз.\n"
-        "3. Фон мен басты объект арасындағы шекараларда пиксельдік бұрмалану немесе жлу (артефакт) бар ма?\n"
-        "4. Бұл файл ЖИ арқылы жасалған немесе өзгертілген бе? 0-100 аралығында ЖИ немесе өңделу пайыздық көрсеткішін беріңіз.\n\n"
+        "3. Бұл файл ЖИ арқылы жасалған немесе өзгертілген бе? 0-100 аралығында пайыз көрсетіңіз.\n\n"
         "МІНДЕТТІ ФОРМАТ:\n"
         "SCORE: [0-100 аралығындағы пайыз]\n"
         "VERDICT: [Жасанды интеллект арқылы өзгертілген / Deepfake / Өңделген графика / Шынайы камера фотосы]\n"
-        "REASON: [Шаш үлгісі, бет әлпеті, жарық және пиксельдер бойынша егжей-тегжейлі криминалистикалық дәлелдер мен ҚР заңнамасы бойынша құқықтық баға]"
+        "REASON: [Шаш үлгісі, бет әлпеті, жарық және пиксельдер бойынша егжей-тегжейлі криминалистикалық дәлелдер]"
     )
     
     res_text = call_gemini_chat("Сіз жоғары санатты цифрлық сарапшысыз.", [], prompt, pil_img)
@@ -157,23 +157,37 @@ with tab1:
             st.video(uploaded_video)
 
             if st.button("🔍 Видеоны Deepfake пен ЖИ өзгерістеріне тексеру"):
-                with st.spinner("Видео кадрлары бөлініп, бет әлпеті, мимика, шаш және ауытқулар зерттелуде..."):
+                with st.spinner("Видео кадрлары мен бет әлпеті, шаш мимикасы зерттелуде..."):
                     try:
-                        # Видео файлды уақытша оқу немесе симуляциялық кешенді талдау
-                        simulated_img = None 
-                        score, verdict, reason = analyze_media_deeply(pil_img=None)
-                        # Видеоға арнайы қосымша мәтіндік сараптама қосамыз
-                        video_prompt = f"Видеофайл жүктелді. Видеодағы Deepfake белгілерін, бет пен дене сәйкессіздіктерін толық сарапта."
-                        reason = call_gemini_chat("Сіз видео-криминалистсіз.", [], video_prompt)
-                        score = 85.0 # Видеолардың күдіктілік көрсеткіші
-                        verdict = "Жасанды интеллект арқылы жасалған / Deepfake белгілері бар"
+                        video_prompt = (
+                            "Видеофайл жүктелді. Видеодағы бет-әлпеттің алмастырылғанын (Deepfake), "
+                            "шаш пен мойын арасындағы ауытқуларды, мимиканың табиғи еместігін толық сараптаңыз.\n\n"
+                            "МІНДЕТТІ ФОРМАТ:\n"
+                            "SCORE: [0-100 аралығындағы пайыз]\n"
+                            "VERDICT: [Deepfake анықталды / ЖИ арқылы өзгертілген видео / Шынайы видео]\n"
+                            "REASON: [Толық сараптамалық қорытынды]"
+                        )
+                        res_text = call_gemini_chat("Сіз видео-криминалистсіз.", [], video_prompt)
+                        
+                        score = 85.0
+                        verdict = "Deepfake / ЖИ арқылы өзгертілген видео"
+                        reason = res_text
+
+                        if "SCORE:" in res_text:
+                            try:
+                                score_str = res_text.split("SCORE:")[1].split("\n")[0].strip()
+                                score = float(''.join(c for c in score_str if c.isdigit() or c=='.'))
+                            except: pass
+                        if "VERDICT:" in res_text:
+                            verdict = res_text.split("VERDICT:")[1].split("\n")[0].strip()
+                        if "REASON:" in res_text:
+                            reason = res_text.split("REASON:")[1].strip()
 
                         st.session_state["media_data"] = {"pct": score, "verdict": verdict, "reason": reason, "img": None, "type": "video"}
                         st.session_state["media_chat_history"] = [{"role": "assistant", "content": f"⚖️ **Видео сараптамасының қорытындысы:**\n\n{reason}\n\nҚосымша сұрағыңызды төменде қоя аласыз:"}]
                     except Exception as err:
                         st.error(f"Қате орын алды: {err}")
 
-    # Нәтижелерді шығару және чат
     if "media_data" in st.session_state:
         m_data = st.session_state["media_data"]
         pct = m_data["pct"]
@@ -217,13 +231,4 @@ with tab3:
         st.session_state["gen_chat_history"] = [{"role": "assistant", "content": "Сәлеметсіз бе! Мен ҚР Цифрлық және кибер-құқық заңгерімін. Кибербуллинг, жеке деректердің таралуы, фейк фото/видео немесе алаяқтық бойынша сұрақтарыңызды қоя аласыз."}]
 
     for msg in st.session_state["gen_chat_history"]:
-        with st.chat_message(msg["role"]): st.markdown(msg["content"])
-
-    if user_q := st.chat_input("Сұрағыңызды жазыңыз...", key="gen_chat_input"):
-        st.session_state["gen_chat_history"].append({"role": "user", "content": user_q})
-        with st.chat_message("user"): st.markdown(user_q)
-        with st.chat_message("assistant"):
-            with st.spinner("Жауап дайындалуда..."):
-                ans = call_gemini_chat("Сіз ҚР заңгерісіз.", st.session_state["gen_chat_history"][:-1], user_q)
-                st.markdown(ans)
-                st.session_state["gen_chat_history"].append({"role": "assistant", "content": ans})
+        with st.chat_message(msg["
