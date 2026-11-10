@@ -4,7 +4,7 @@ from PIL import Image
 import google.generativeai as genai
 
 # =========================================================
-# ⚙️ НАСТРОЙКИ СТРАНИЦЫ И СТИЛИ
+# ⚙️ БАПТАУЛАР МЕН СТИЛЬДЕР
 # =========================================================
 st.set_page_config(
     page_title="CyberShield.kz — ҚР Цифрлық сараптама порталы",
@@ -35,9 +35,6 @@ st.markdown("""
         color: #1d4ed8;
         text-decoration: none;
         font-weight: bold;
-    }
-    .top-navbar a:hover {
-        text-decoration: underline;
     }
     .badge-num {
         background-color: #fee2e2;
@@ -93,15 +90,15 @@ st.markdown("""
     <div>
         🛡️ <b>Шұғыл сенім телефондары:</b> 
         <span style="margin-left: 5px;">📞 Полиция: <span class="badge-num">102</span></span> | 
-        <span style="margin-left: 5px;">☎️ Байланыс орталығы: <span class="badge-num">1414</span></span> | 
-        <span style="margin-left: 5px;">🆘 Балалар құқығы: <span class="badge-num">111</span></span> | 
-        <span style="margin-left: 5px;">⛑️ Тұрмыстық зорлық-зомбылыққа қарсы: <span class="badge-num">150</span></span>
+        <span style="margin-left: 5px;">☎️ Орталық: <span class="badge-num">1414</span></span> | 
+        <span style="margin-left: 5px;">🆘 Балалар: <span class="badge-num">111</span></span> | 
+        <span style="margin-left: 5px;">⛑️ Сенім: <span class="badge-num">150</span></span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 🗝️ ИНИЦИАЛИЗАЦИЯ КЛЮЧА
+# 🗝️ API БАПТАУЫ
 # =========================================================
 GEMINI_KEY = st.secrets.get("GEMINI_KEY", "")
 
@@ -117,7 +114,8 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
     if not GEMINI_KEY:
         return "⚠️ Gemini API кілті (GEMINI_KEY) Streamlit Secrets бөлімінде көрсетілмеген!"
 
-    models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-flash']
+    # Ең тұрақты және жұмыс істейтін модельдер тізімі
+    models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro']
     prepared_img = compress_image(pil_img) if pil_img is not None else None
 
     last_error = ""
@@ -177,7 +175,7 @@ def analyze_with_gemini_vision(pil_img):
     return score, verdict, reason
 
 # =========================================================
-# 🏛️ БАННЕР
+# 🏛️ БАННЕР ЖӘНЕ ИНТЕРФЕЙС
 # =========================================================
 st.markdown("""
 <div class="header-banner">
@@ -251,7 +249,7 @@ with tab1:
                             sys_p = (
                                 f"Сіз тәжірибелі ҚР кибер-заңгерісіз. Сараптама нәтижесі: {p_data['reason']}.\n"
                                 "МАҢЫЗДЫ: Пайдаланушының сұрағына шаблонсыз, мәтіннің және суреттің әрбір маңызды деталіне, "
-                                "сондай-ақ ҚР заңнамасына (қылмыстық, азаматтық немесе авторлық құқық кодекстеріне) қатаң сүйене отырып жауап беріңіз."
+                                "сондай-ақ ҚР заңнамасына қатаң сүйене отырып жауап беріңіз."
                             )
                             ans = call_gemini_chat(
                                 sys_p, 
