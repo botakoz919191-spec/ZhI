@@ -61,7 +61,6 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
     if not GEMINI_KEY:
         return "⚠️ Gemini API кілті (GEMINI_KEY) Streamlit Secrets бөлімінде көрсетілмеген!"
 
-    # 404 қатесін болдырмау үшін дұрыс жұмыс істейтін модель тізімі
     models_to_try = ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro']
     prepared_img = compress_image(pil_img) if pil_img is not None else None
 
@@ -231,4 +230,13 @@ with tab3:
         st.session_state["gen_chat_history"] = [{"role": "assistant", "content": "Сәлеметсіз бе! Мен ҚР Цифрлық және кибер-құқық заңгерімін. Кибербуллинг, жеке деректердің таралуы, фейк фото/видео немесе алаяқтық бойынша сұрақтарыңызды қоя аласыз."}]
 
     for msg in st.session_state["gen_chat_history"]:
-        with st.chat_message(msg["
+        with st.chat_message(msg["role"]): st.markdown(msg["content"])
+
+    if user_q := st.chat_input("Сұрағыңызды жазыңыз...", key="gen_chat_input"):
+        st.session_state["gen_chat_history"].append({"role": "user", "content": user_q})
+        with st.chat_message("user"): st.markdown(user_q)
+        with st.chat_message("assistant"):
+            with st.spinner("Жауап дайындалуда..."):
+                ans = call_gemini_chat("Сіз ҚР заңгерісіз.", st.session_state["gen_chat_history"][:-1], user_q)
+                st.markdown(ans)
+                st.session_state["gen_chat_history"].append({"role": "assistant", "content": ans})
