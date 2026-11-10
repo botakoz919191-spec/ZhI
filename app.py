@@ -55,8 +55,8 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_img=None):
     if not GEMINI_KEY:
         return "⚠️ Gemini API кілті (GEMINI_KEY) Streamlit Secrets бөлімінде көрсетілмеген!"
 
-    # Ең соңғы тұрақты модель аты
-    models_to_try = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-pro']
+    # Тек қана 100% жұмыс істейтін flash моделі
+    models_to_try = ['gemini-1.5-flash']
     prepared_img = compress_image(pil_img) if pil_img is not None else None
 
     last_error = ""
