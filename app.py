@@ -12,7 +12,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Жюриге арналған ерекше, стильді және заманауи дизайн стилизациясы
 st.markdown("""
 <style>
     .stApp { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important; }
@@ -75,7 +74,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Жоғарғы панель: Сенім телефондары мен мекемелер
 st.markdown("""
 <div class="top-navbar">
     <div>🏛️ <b>Әділет министрлігі:</b> <a href="https://www.gov.kz/memleket/entities/adilet" target="_blank">gov.kz/adilet</a></div>
@@ -147,7 +145,7 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_imgs=None):
                 full_prompt += f"{msg['role'].upper()}: {msg['content']}\n"
             
             full_prompt += f"\nПАЙДАЛАНУШЫ СҰРАҒЫ: {user_new_msg}\n"
-            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Ғылыми жұмысқа лайықты, жоғары дәлдіктегі цифрлық сараптама мен құқықтық баға бер."
+            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Нақты сараптамалық жауап бер."
 
             contents = [full_prompt]
             if pil_imgs:
@@ -162,25 +160,24 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_imgs=None):
             time.sleep(1)
             continue
 
-    return "⚠️ API қатесі орын алды немесе баланс таусылды."
+    return "⚠️ API қатесі орын алды."
 
 def analyze_media(pil_imgs):
     prompt = (
-        "Сіз ғылыми жобалар мен цифрлық сараптама және киберқұқық саласындағы жетекші сарапшысыз. Берілген материалға (фото, инфографика немесе видео кадрларына) жан-жақты сараптама жасаңыз:\n"
-        "1. Егер бұл материал инфографика, 3D графика, векторлық графика немесе Жасанды интеллект (ЖИ) арқылы жасалған иллюстрация болса, оның шынайы камера түсірілімі емес екенін айтып, SCORE көрсеткішін міндетті түрде 95% немесе 100% етіп қойыңыз.\n"
-        "2. Материалда қандай da бір құқық бұзушылық, заңсыздық немесе азаматтардың құқықтарына қайшы келетін элементтер (мысалы, рұқсатсыз цифрлық манипуляция) бар-жоғын ғылыми-құқықтық тұрғыдан бағалаңыз.\n"
-        "3. Нақты пайыздық көрсеткішті (0-100% аралығындағы SCORE) көрсетіңіз.\n\n"
+        "Сіз цифрлық сарапшысыз. Берілген материалға (фото немесе видео кадрларына) нақты сараптама жасаңыз:\n"
+        "1. Материалды мұқият тексеріп, оның шынайы камера түсірілімі ме, әлде Жасанды интеллект (ЖИ), 3D графика немесе монтаж арқылы жасалған ба, соны анықтаңыз.\n"
+        "2. ЖИ немесе монтаж ықтималдығын 0-ден 100%-ға дейінгі аралықтағы нақты пайызбен (SCORE) көрсетіңіз. (Егер 3D немесе ЖИ генерациясы болса, пайызын жоғары етіп, мысалы 95-100% немесе шынайы болса төмен етіп дұрыс қойыңыз).\n\n"
         "МІНДЕТТІ ФОРМАТ:\n"
-        "SCORE: [0-100 аралығындағы нақты пайыз]\n"
+        "SCORE: [0-100 аралығындағы нақты пайыз, мысалы: 95% немесе 15%]\n"
         "VERDICT: [Қорытынды сараптамалық вердикт]\n"
-        "REASON: [Цифрлық сараптама және құқықтық/заңсыздық тұрғысынан нақты дәлелдермен сипаттама]"
+        "REASON: [Материалдың шынайылығы немесе ЖИ/монтаж белгілері бойынша нақты дәлелді сипаттамасы]"
     )
     
-    sys_msg = "Сіз ғылыми-цифрлық сарапшы және құқықтанушысыз."
+    sys_msg = "Сіз цифрлық сарапшысыз."
     res_text = call_gemini_chat(sys_msg, [], prompt, pil_imgs=pil_imgs)
     
-    score = 15.0
-    verdict = "Шынайы камера материалы"
+    score = 50.0
+    verdict = "Талдау нәтижесі"
     reason = res_text
 
     if "SCORE:" in res_text:
@@ -198,25 +195,25 @@ def analyze_media(pil_imgs):
 st.markdown("""
 <div class="header-banner">
     <h1 class="header-title">⚖️ CyberShield.kz</h1>
-    <p class="header-subtitle">Қазақстан Республикасы цифрлық сараптама порталы (Ғылыми жоба)</p>
+    <p class="header-subtitle">Қазақстан Республикасы цифрлық сараптама порталы</p>
 </div>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4 = st.tabs(["🖼️ Фото / Инфографика сараптамасы", "🎥 Видео сараптамасы", "📝 Мәтін сараптамасы", "💬 Сарапшы консультациясы"])
+tab1, tab2, tab3, tab4 = st.tabs(["🖼️ Фото тексеру", "🎥 Видео сараптау", "📝 Мәтін тексеру", "💬 Сарапшы консультациясы"])
 
 with tab1:
-    st.markdown("### 🖼️ Фотосурет немесе инфографиканы тексеру және сараптау")
-    uploaded_photo = st.file_uploader("Файлды жүктеңіз (Фото / Инфографика)", type=["jpg", "jpeg", "png", "webp", "heic", "bmp", "tiff"], key="photo_upload")
+    st.markdown("### 🖼️ Фотосуретті тексеру")
+    uploaded_photo = st.file_uploader("Фотосуретті жүктеңіз", type=["jpg", "jpeg", "png", "webp", "heic", "bmp", "tiff"], key="photo_upload")
     
     if uploaded_photo:
         try:
             pil_img = Image.open(uploaded_photo)
             col_img1, col_img2, col_img3 = st.columns([1, 2, 1])
             with col_img2:
-                st.image(pil_img, caption="Жүктелген материал", use_container_width=True)
+                st.image(pil_img, caption="Жүктелген фотосурет", use_container_width=True)
 
             if st.button("Тексеру", key="photo_btn"):
-                with st.spinner("Материал тексерілуде..."):
+                with st.spinner("Фото тексерілуде..."):
                     score, verdict, reason = analyze_media([pil_img])
                     st.session_state["photo_data"] = {"pct": score, "verdict": verdict, "reason": reason, "img": pil_img}
                     st.session_state["photo_chat_history"] = [{"role": "assistant", "content": f"⚖️ **Сараптама нәтижесі:**\n\n{reason}"}]
@@ -228,8 +225,8 @@ with tab1:
         pct = p_data["pct"]
         verdict = p_data["verdict"]
 
-        if pct >= 50.0 or "ЖАСАНДЫ" in verdict.upper() or "МОНТАЖ" in verdict.upper() or "DEEPFAKE" in verdict.upper() or "3D" in verdict.upper() or "ГРАФИКА" in verdict.upper() or "ИНФОГРАФИКА" in verdict.upper():
-            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (ЖИ/Монтаж/Инфографика ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
+        if pct >= 50.0:
+            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (ЖИ/Монтаж ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
         else:
             st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (Шынайылық көрсеткіші: {100-pct}%)</div>', unsafe_allow_html=True)
 
@@ -256,13 +253,13 @@ with tab1:
                 st.markdown(user_q)
             with st.chat_message("assistant"):
                 with st.spinner("Жауап дайындалуда..."):
-                    sys_p = "Сіз ғылыми-цифрлық сарапшысыз. Нақты жауап беріңіз."
+                    sys_p = "Сіз цифрлық сарапшысыз. Нақты жауап беріңіз."
                     ans = call_gemini_chat(sys_p, st.session_state["photo_chat_history"][:-1], user_q, pil_imgs=[p_data["img"]])
                     st.markdown(ans)
                     st.session_state["photo_chat_history"].append({"role": "assistant", "content": ans})
 
 with tab2:
-    st.markdown("### 🎥 Видеоны тексеру және сараптау")
+    st.markdown("### 🎥 Видео сараптау")
     uploaded_video = st.file_uploader("Видеоны жүктеңіз", type=["mp4", "mov", "avi", "mkv", "webm"], key="video_upload")
     
     if uploaded_video:
@@ -271,7 +268,7 @@ with tab2:
             st.video(uploaded_video, format="video/mp4", start_time=0)
         
         if st.button("Сараптау", key="video_btn"):
-            with st.spinner("Видео файл сарапталуда..."):
+            with st.spinner("Видео сарапталуда..."):
                 frames = extract_frames_from_video(uploaded_video, max_frames=5)
                 if frames:
                     score, verdict, reason = analyze_media(frames)
@@ -285,7 +282,7 @@ with tab2:
         pct = v_data["pct"]
         verdict = v_data["verdict"]
 
-        if pct >= 50.0 or "ЖАСАНДЫ" in verdict.upper() or "МОНТАЖ" in verdict.upper() or "DEEPFAKE" in verdict.upper() or "3D" in verdict.upper() or "ГРАФИКА" in verdict.upper():
+        if pct >= 50.0:
             st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (ЖИ/Монтаж ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
         else:
             st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (Шынайылық көрсеткіші: {100-pct}%)</div>', unsafe_allow_html=True)
@@ -313,18 +310,18 @@ with tab2:
                 st.markdown(user_q_v)
             with st.chat_message("assistant"):
                 with st.spinner("Жауап дайындалуда..."):
-                    sys_p = "Сіз ғылыми-цифрлық сарапшысыз. Нақты жауап беріңіз."
+                    sys_p = "Сіз цифрлық сарапшысыз. Нақты жауап беріңіз."
                     ans_v = call_gemini_chat(sys_p, st.session_state["video_chat_history"][:-1], user_q_v, pil_imgs=v_data.get("imgs"))
                     st.markdown(ans_v)
                     st.session_state["video_chat_history"].append({"role": "assistant", "content": ans_v})
 
 with tab3:
-    st.markdown("### 📝 Мәтінді тексеру")
+    st.markdown("### 📝 Мәтін тексеру")
     text_input = st.text_area("Тексеретін мәтінді енгізіңіз:", height=150, key="text_input_area")
     if st.button("Тексеру", key="text_btn"):
         if text_input.strip():
             with st.spinner("Талдануда..."):
-                ans_t = call_gemini_chat("Сіз ғылыми сарапшы-редакторсыз.", [], f"Мәтінді ғылыми тұрғыдан талдап бер: {text_input}")
+                ans_t = call_gemini_chat("Сіз сарапшы-редакторсыз.", [], f"Мәтінді талдап бер: {text_input}")
                 st.markdown(f"""
                 <div class="report-card">
                     <h4 style="margin-top:0; color:#1e3a8a;">📝 Мәтінді талдау нәтижесі:</h4>
@@ -335,7 +332,7 @@ with tab3:
 with tab4:
     st.markdown("### 💬 Сарапшы консультациясы")
     if "gen_chat_history" not in st.session_state:
-        st.session_state["gen_chat_history"] = [{"role": "assistant", "content": "Сәлеметсіз бе! Мен ғылыми-цифрлық сараптама саласындағы маманмын. Ғылыми жұмысыңызға қатысты сұрақтарыңызды қоя аласыз."}]
+        st.session_state["gen_chat_history"] = [{"role": "assistant", "content": "Сәлеметсіз бе! Мен цифрлық сараптама саласындағы маманмын. Сұрақтарыңызды қоя аласыз."}]
 
     for msg in st.session_state["gen_chat_history"]:
         with st.chat_message(msg["role"]):
@@ -347,6 +344,6 @@ with tab4:
             st.markdown(user_q_gen)
         with st.chat_message("assistant"):
             with st.spinner("Жауап дайындалуда..."):
-                ans_gen = call_gemini_chat("Сіз ғылыми сарапшысыз.", st.session_state["gen_chat_history"][:-1], user_q_gen)
+                ans_gen = call_gemini_chat("Сіз цифрлық сарапшысыз.", st.session_state["gen_chat_history"][:-1], user_q_gen)
                 st.markdown(ans_gen)
                 st.session_state["gen_chat_history"].append({"role": "assistant", "content": ans_gen})
