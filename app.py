@@ -12,32 +12,66 @@ st.set_page_config(
     layout="wide"
 )
 
+# Жюриге арналған ерекше, стильді және заманауи дизайн стилизациясы
 st.markdown("""
 <style>
-    .stApp { background: linear-gradient(135deg, #edf5ff 0%, #dbeafe 50%, #eff6ff 100%) !important; }
+    .stApp { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important; }
+    
     .top-navbar {
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        border: 2px solid #cbd5e1; padding: 12px 20px; border-radius: 12px;
-        display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 13px; color: #1e293b;
-        flex-wrap: wrap; gap: 10px;
+        background: #ffffff;
+        border: 1px solid #cbd5e1; 
+        padding: 14px 24px; 
+        border-radius: 14px;
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        margin-bottom: 24px; 
+        font-size: 14px; 
+        color: #1e293b;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        flex-wrap: wrap; 
+        gap: 12px;
     }
-    .top-navbar a { color: #1d4ed8; text-decoration: none; font-weight: bold; }
+    .top-navbar a { color: #2563eb; text-decoration: none; font-weight: 700; }
     .phone-item {
-        background: #f1f5f9; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 12px;
+        background: #f8fafc; padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; font-weight: 600;
     }
+    
     .header-banner {
-        background: linear-gradient(135deg, #0f2b5c 0%, #1e40af 60%, #1d4ed8 100%);
-        color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; border-bottom: 5px solid #d97706;
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        color: white; padding: 28px; border-radius: 16px; margin-bottom: 24px;
+        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2);
     }
-    .header-title { font-size: 26px; font-weight: 800; color: #ffffff; margin: 0; }
-    .header-subtitle { font-size: 14px; color: #e0f2fe; margin-top: 4px; }
+    .header-title { font-size: 30px; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: -0.5px; }
+    .header-subtitle { font-size: 15px; color: #bfdbfe; margin-top: 6px; font-weight: 400; }
+
     div.stButton > button {
-        background: linear-gradient(90deg, #0f2b5c 0%, #1e40af 100%) !important;
-        color: #ffffff !important; font-size: 15px !important; font-weight: bold !important;
-        padding: 10px 20px !important; border-radius: 8px !important; width: 100%;
+        background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%) !important;
+        color: #ffffff !important; font-size: 15px !important; font-weight: 700 !important;
+        padding: 12px 24px !important; border-radius: 10px !important; width: 100%;
+        box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+        transition: all 0.3s ease;
     }
-    .verdict-ai { background-color: #fef2f2; border: 2px solid #ef4444; color: #991b1b; padding: 14px; border-radius: 10px; font-weight: bold; margin-bottom: 12px; }
-    .verdict-real { background-color: #f0fdf4; border: 2px solid #22c55e; color: #166534; padding: 14px; border-radius: 10px; font-weight: bold; margin-bottom: 12px; }
+    div.stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .verdict-ai { 
+        background-color: #fef2f2; border: 2px solid #ef4444; color: #991b1b; 
+        padding: 18px; border-radius: 12px; font-weight: 700; font-size: 16px; margin-bottom: 16px;
+        box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1);
+    }
+    .verdict-real { 
+        background-color: #f0fdf4; border: 2px solid #22c55e; color: #166534; 
+        padding: 18px; border-radius: 12px; font-weight: 700; font-size: 16px; margin-bottom: 16px;
+        box-shadow: 0 4px 6px rgba(34, 197, 94, 0.1);
+    }
+    
+    .report-card {
+        background: #ffffff; padding: 22px; border-radius: 14px; border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 20px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -113,7 +147,7 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_imgs=None):
                 full_prompt += f"{msg['role'].upper()}: {msg['content']}\n"
             
             full_prompt += f"\nПАЙДАЛАНУШЫ СҰРАҒЫ: {user_new_msg}\n"
-            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Ғылыми жұмысқа сай, цифрлық сараптама мен құқықтық/заңсыздық тұрғыларын ескере отырып нақты жауап бер."
+            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Ғылыми жұмысқа лайықты, жоғары дәлдіктегі цифрлық сараптама мен құқықтық баға бер."
 
             contents = [full_prompt]
             if pil_imgs:
@@ -132,9 +166,9 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_imgs=None):
 
 def analyze_media(pil_imgs):
     prompt = (
-        "Сіз ғылыми жобалар мен цифрлық сараптама және киберқұқық саласындағы сарапшысыз. Берілген материалға (фото немесе видео кадрларына) жан-жақты сараптама жасаңыз:\n"
-        "1. Материалдың шынайы камера түсірілімі ме, әлде Жасанды интеллект (ЖИ) арқылы жасалған ба, 3D графика ма, соны анықтаңыз (егер 3D графика немесе ЖИ генерациясы болса, SCORE 100% болып көрсетілуі тиіс).\n"
-        "2. Бұл материалда қандай да бір құқық бұзушылық, заңсыздық немесе азаматтардың құқықтарына қайшы келетін элементтер (мысалы, рұқсатсыз пайдалану, жалған ақпарат, манипуляция) бар-жоғын ғылыми-құқықтық тұрғыдан бағалаңыз.\n"
+        "Сіз ғылыми жобалар мен цифрлық сараптама және киберқұқық саласындағы жетекші сарапшысыз. Берілген материалға (фото, инфографика немесе видео кадрларына) жан-жақты сараптама жасаңыз:\n"
+        "1. Егер бұл материал инфографика, 3D графика, векторлық графика немесе Жасанды интеллект (ЖИ) арқылы жасалған иллюстрация болса, оның шынайы камера түсірілімі емес екенін айтып, SCORE көрсеткішін міндетті түрде 95% немесе 100% етіп қойыңыз.\n"
+        "2. Материалда қандай da бір құқық бұзушылық, заңсыздық немесе азаматтардың құқықтарына қайшы келетін элементтер (мысалы, рұқсатсыз цифрлық манипуляция) бар-жоғын ғылыми-құқықтық тұрғыдан бағалаңыз.\n"
         "3. Нақты пайыздық көрсеткішті (0-100% аралығындағы SCORE) көрсетіңіз.\n\n"
         "МІНДЕТТІ ФОРМАТ:\n"
         "SCORE: [0-100 аралығындағы нақты пайыз]\n"
@@ -164,23 +198,25 @@ def analyze_media(pil_imgs):
 st.markdown("""
 <div class="header-banner">
     <h1 class="header-title">⚖️ CyberShield.kz</h1>
-    <p class="header-subtitle">Қазақстан Республикасы цифрлық сараптама порталы (Ғылыми жұмыс)</p>
+    <p class="header-subtitle">Қазақстан Республикасы цифрлық сараптама порталы (Ғылыми жоба)</p>
 </div>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4 = st.tabs(["🖼️ Фото сараптамасы", "🎥 Видео сараптамасы", "📝 Мәтін сараптамасы", "💬 Сарапшы консультациясы"])
+tab1, tab2, tab3, tab4 = st.tabs(["🖼️ Фото / Инфографика сараптамасы", "🎥 Видео сараптамасы", "📝 Мәтін сараптамасы", "💬 Сарапшы консультациясы"])
 
 with tab1:
-    st.markdown("### 🖼️ Фотосуретті тексеру және сараптау")
-    uploaded_photo = st.file_uploader("Фотосуретті жүктеңіз", type=["jpg", "jpeg", "png", "webp", "heic", "bmp", "tiff"], key="photo_upload")
+    st.markdown("### 🖼️ Фотосурет немесе инфографиканы тексеру және сараптау")
+    uploaded_photo = st.file_uploader("Файлды жүктеңіз (Фото / Инфографика)", type=["jpg", "jpeg", "png", "webp", "heic", "bmp", "tiff"], key="photo_upload")
     
     if uploaded_photo:
         try:
             pil_img = Image.open(uploaded_photo)
-            st.image(pil_img, caption="Жүктелген фотосурет", width=300)
+            col_img1, col_img2, col_img3 = st.columns([1, 2, 1])
+            with col_img2:
+                st.image(pil_img, caption="Жүктелген материал", use_container_width=True)
 
             if st.button("Тексеру", key="photo_btn"):
-                with st.spinner("Фотосурет тексерілуде..."):
+                with st.spinner("Материал тексерілуде..."):
                     score, verdict, reason = analyze_media([pil_img])
                     st.session_state["photo_data"] = {"pct": score, "verdict": verdict, "reason": reason, "img": pil_img}
                     st.session_state["photo_chat_history"] = [{"role": "assistant", "content": f"⚖️ **Сараптама нәтижесі:**\n\n{reason}"}]
@@ -192,12 +228,18 @@ with tab1:
         pct = p_data["pct"]
         verdict = p_data["verdict"]
 
-        if pct >= 50.0 or "ЖАСАНДЫ" in verdict.upper() or "МОНТАЖ" in verdict.upper() or "DEEPFAKE" in verdict.upper() or "3D" in verdict.upper():
-            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (ЖИ/Монтаж ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
+        if pct >= 50.0 or "ЖАСАНДЫ" in verdict.upper() or "МОНТАЖ" in verdict.upper() or "DEEPFAKE" in verdict.upper() or "3D" in verdict.upper() or "ГРАФИКА" in verdict.upper() or "ИНФОГРАФИКА" in verdict.upper():
+            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (ЖИ/Монтаж/Инфографика ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
         else:
             st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (Шынайылық көрсеткіші: {100-pct}%)</div>', unsafe_allow_html=True)
 
-        st.info(f"🔍 **Дәлелдер мен сипаттама:**\n\n{p_data['reason']}")
+        st.markdown(f"""
+        <div class="report-card">
+            <h4 style="margin-top:0; color:#1e3a8a;">🔍 Дәлелдер мен сипаттама:</h4>
+            <p style="font-size: 15px; line-height: 1.6; color: #334155;">{p_data['reason']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         st.markdown("---")
         st.markdown("### 💬 Сарапшымен диалог")
 
@@ -224,7 +266,7 @@ with tab2:
     uploaded_video = st.file_uploader("Видеоны жүктеңіз", type=["mp4", "mov", "avi", "mkv", "webm"], key="video_upload")
     
     if uploaded_video:
-        col_v1, col_v2, col_v3 = st.columns([1, 2, 1])
+        col_v1, col_v2, col_v3 = st.columns([1.5, 2, 1.5])
         with col_v2:
             st.video(uploaded_video, format="video/mp4", start_time=0)
         
@@ -243,12 +285,18 @@ with tab2:
         pct = v_data["pct"]
         verdict = v_data["verdict"]
 
-        if pct >= 50.0 or "ЖАСАНДЫ" in verdict.upper() or "МОНТАЖ" in verdict.upper() or "DEEPFAKE" in verdict.upper() or "3D" in verdict.upper():
+        if pct >= 50.0 or "ЖАСАНДЫ" in verdict.upper() or "МОНТАЖ" in verdict.upper() or "DEEPFAKE" in verdict.upper() or "3D" in verdict.upper() or "ГРАФИКА" in verdict.upper():
             st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (ЖИ/Монтаж ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
         else:
             st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (Шынайылық көрсеткіші: {100-pct}%)</div>', unsafe_allow_html=True)
 
-        st.info(f"🔍 **Дәлелдер мен сипаттама:**\n\n{v_data['reason']}")
+        st.markdown(f"""
+        <div class="report-card">
+            <h4 style="margin-top:0; color:#1e3a8a;">🔍 Дәлелдер мен сипаттама:</h4>
+            <p style="font-size: 15px; line-height: 1.6; color: #334155;">{v_data['reason']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         st.markdown("---")
         st.markdown("### 💬 Сарапшымен диалог")
 
@@ -277,7 +325,12 @@ with tab3:
         if text_input.strip():
             with st.spinner("Талдануда..."):
                 ans_t = call_gemini_chat("Сіз ғылыми сарапшы-редакторсыз.", [], f"Мәтінді ғылыми тұрғыдан талдап бер: {text_input}")
-                st.info(ans_t)
+                st.markdown(f"""
+                <div class="report-card">
+                    <h4 style="margin-top:0; color:#1e3a8a;">📝 Мәтінді талдау нәтижесі:</h4>
+                    <p style="font-size: 15px; line-height: 1.6; color: #334155;">{ans_t}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
 with tab4:
     st.markdown("### 💬 Сарапшы консультациясы")
