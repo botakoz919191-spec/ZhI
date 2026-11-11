@@ -177,7 +177,7 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_imgs=None):
                 full_prompt += f"{msg['role'].upper()}: {msg['content']}\n"
             
             full_prompt += f"\nПАЙДАЛАНУШЫ СҰРАҒЫ: {user_new_msg}\n"
-            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Нақты сараптамалық жауап бер."
+            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Нақты криминалистикалық сараптамалық жауап бер."
 
             contents = [full_prompt]
             if pil_imgs:
@@ -196,19 +196,22 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_imgs=None):
 
 def analyze_media(pil_imgs):
     prompt = (
-        "Сіз жоғары санатты цифрлық криминалист-сарапшысыз. Берілген материалға (фото немесе видео кадрларына) ерекше мұқияттылықпен сараптама жасаңыз:\n"
-        "1. Материалды жан-жақты тексеріңіз: бұл таза шынайы камера түсірілімі ме, әлде камера программаларының кіріктірілген фотоэффекттері, сүзгілері (filters), түс коррекциясы, цифрлық ретуш қолданылған ба, жоқ әлде толықтай Жасанды интеллект (ЖИ) пен монтаж арқылы жасалған ба?\n"
-        "2. Егер материалда дене, киім немесе фон бойынша эффекттер, сүзгілер немесе өңдеулер болса, олардың көлеміне қарай пайызын тиісінше көтеріп көрсетіңіз (мысалы, күрделі өңдеулер үшін 40-70%, ал таза ЖИ немесе күрделі монтаж болса 85-100%). Шынайы камера материалы үшін пайыз өте төмен (0-10%) болуы тиіс.\n"
+        "Сіз жоғары санатты цифрлық криминалист-сарапшысыз. Берілген материалға (адамдар, табиғат, заттар, пейзаж немесе видео кадрлары) ЕРЕКШЕ МҰҚИЯТТЫЛЫҚПЕН сараптама жасаңыз:\n"
+        "1. БАРЛЫҚ ЭЛЕМЕНТТЕРДІ ТЕКСЕРУ: Материалдағы жарық түсу бұрышын, көлеңкелерді, текстураны, фоның үйлесімділігін және пиксельдік құрылымды жіті тексеріңіз. Бұл таза камера түсірілімі ме, әлде цифрлық сүзгілер (filters), түс коррекциясы, ретуш немесе жасанды интеллект (ЖИ) генерациясы/монтаж бар ма?\n"
+        "2. ПАЙЫЗДЫҚ ШКӘЛАСЫ:\n"
+        "   - Ешқандай өзгеріссіз, таза оптикалық шынайы камера түсірілімі болса — ЖИ пайызы ҚАТАҢ ТҮРДЕ 0% болуы тиіс.\n"
+        "   - Егер камера сүзгілері немесе жеңіл эффекттер қолданылған болса — нақты пайызды (мысалы, 10%-45% аралығындағы өңдеу деңгейі) көрсетіңіз.\n"
+        "   - Толықтай ЖИ генерациясы немесе терең монтаж болса — ЖИ пайызын 85-100% аралығында белгілеңіз.\n"
         "3. ЖАУАПТЫ МІНДЕТТІ ТҮРДЕ МЫНА ФОРМАТТА БАСТАҢЫЗ:\n"
-        "SCORE: [тек сан, мысалы: 10 немесе 95]\n"
+        "SCORE: [тек сан, мысалы: 0 немесе 25 немесе 95]\n"
         "VERDICT: [Қорытынды сараптамалық вердикт]\n"
-        "REASON: [Дене, киім, фон, эффекттер, сүзгілер және ЖИ белгілерін ескере отырып жасалған толық дәлелді сипаттама]"
+        "REASON: [Барлық бөлшектерді, жарықты, текстураны және эффекттерді терең криминалистикалық тұрғыдан талдаған толық дәлелді сипаттама]"
     )
     
     sys_msg = "Сіз цифрлық криминалист-сарапшысыз."
     res_text = call_gemini_chat(sys_msg, [], prompt, pil_imgs=pil_imgs)
     
-    score = 10.0
+    score = 0.0
     verdict = "Шынайы камера материалы"
     reason = res_text
 
@@ -245,7 +248,7 @@ with tab1:
                 st.image(pil_img, caption="Жүктелген фотосурет", use_container_width=True)
 
             if st.button("Тексеру", key="photo_btn"):
-                with st.spinner("Фото тексерілуде..."):
+                with st.spinner("Фото өте мұқият тексерілуде (барлық бөлшектер мен эффекттер қаралуда)..."):
                     score, verdict, reason = analyze_media([pil_img])
                     st.session_state["photo_data"] = {"pct": score, "verdict": verdict, "reason": reason, "img": pil_img}
                     st.session_state["photo_chat_history"] = [{"role": "assistant", "content": f"⚖️ **Сараптама нәтижесі (ЖИ/Өңдеу көрсеткіші: {score}%):**\n\n{reason}"}]
@@ -257,15 +260,16 @@ with tab1:
         pct = p_data["pct"]
         verdict = p_data["verdict"]
 
-        # ЖИ немесе өңдеу/эффект пайызы басында айқын көрсетіледі
         if pct >= 50.0:
-            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ — ЖИ / Өңдеу көрсеткіші: {pct}%<br><b>Вердикт:</b> {verdict}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ — ЖИ / Монтаж көрсеткіші: {pct}%<br><b>Вердикт:</b> {verdict}</div>', unsafe_allow_html=True)
+        elif pct > 0.0:
+            st.markdown(f'<div class="verdict-ai" style="background-color: #fefce8; border-color: #eab308; color: #854d0e;">⚡ САРАПТАМА ҚОРЫТЫНДЫСЫ — Өңдеу / Эффекттер деңгейі: {pct}%<br><b>Вердикт:</b> {verdict}</div>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ — ЖИ / Өңдеу көрсеткіші: {pct}%<br><b>Вердикт:</b> {verdict} (Шынайылық деңгейі: {100-pct}%)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ — ЖИ көрсеткіші: {pct}%<br><b>Вердикт:</b> {verdict} (Шынайылық деңгейі: 100%)</div>', unsafe_allow_html=True)
 
         st.markdown(f"""
         <div class="report-card">
-            <h4 style="margin-top:0; color:#1e3a8a;">🔍 Дәлелдер мен сипаттама (Дене, киім, фон және эффекттер):</h4>
+            <h4 style="margin-top:0; color:#1e3a8a;">🔍 Криминалистикалық дәлелдер (Бөлшектер мен эффекттер):</h4>
             <p style="font-size: 15px; line-height: 1.6; color: #334155;">{p_data['reason']}</p>
         </div>
         """, unsafe_allow_html=True)
@@ -301,7 +305,7 @@ with tab2:
             st.video(uploaded_video, format="video/mp4", start_time=0)
         
         if st.button("Сараптау", key="video_btn"):
-            with st.spinner("Видео сарапталуда..."):
+            with st.spinner("Видео кадрлары аса мұқият сарапталуда..."):
                 frames = extract_frames_from_video(uploaded_video, max_frames=5)
                 if frames:
                     score, verdict, reason = analyze_media(frames)
@@ -316,13 +320,15 @@ with tab2:
         verdict = v_data["verdict"]
 
         if pct >= 50.0:
-            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ — ЖИ / Өңдеу көрсеткіші: {pct}%<br><b>Вердикт:</b> {verdict}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ — ЖИ / Монтаж көрсеткіші: {pct}%<br><b>Вердикт:</b> {verdict}</div>', unsafe_allow_html=True)
+        elif pct > 0.0:
+            st.markdown(f'<div class="verdict-ai" style="background-color: #fefce8; border-color: #eab308; color: #854d0e;">⚡ САРАПТАМА ҚОРЫТЫНДЫСЫ — Өңдеу / Эффекттер деңгейі: {pct}%<br><b>Вердикт:</b> {verdict}</div>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ — ЖИ / Өңдеу көрсеткіші: {pct}%<br><b>Вердикт:</b> {verdict} (Шынайылық деңгейі: {100-pct}%)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ — ЖИ көрсеткіші: {pct}%<br><b>Вердикт:</b> {verdict} (Шынайылық деңгейі: 100%)</div>', unsafe_allow_html=True)
 
         st.markdown(f"""
         <div class="report-card">
-            <h4 style="margin-top:0; color:#1e3a8a;">🔍 Дәлелдер мен сипаттама (Дене, киім, фон және эффекттер):</h4>
+            <h4 style="margin-top:0; color:#1e3a8a;">🔍 Криминалистикалық дәлелдер (Бөлшектер мен эффекттер):</h4>
             <p style="font-size: 15px; line-height: 1.6; color: #334155;">{v_data['reason']}</p>
         </div>
         """, unsafe_allow_html=True)
