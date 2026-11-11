@@ -145,7 +145,7 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_imgs=None):
                 full_prompt += f"{msg['role'].upper()}: {msg['content']}\n"
             
             full_prompt += f"\nПАЙДАЛАНУШЫ СҰРАҒЫ: {user_new_msg}\n"
-            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Нақты сараптамалық жауап бер."
+            full_prompt += "\nЖАУАП ЕРЕЖЕСІ: Ғылыми-құқықтық және криминалистикалық тұрғыдан нақты жауап бер."
 
             contents = [full_prompt]
             if pil_imgs:
@@ -164,17 +164,17 @@ def call_gemini_chat(system_prompt, chat_history, user_new_msg, pil_imgs=None):
 
 def analyze_media(pil_imgs):
     prompt = (
-        "Сіз жоғары санатты цифрлық сарапшысыз. Берілген материалға мұқият сараптама жасаңыз:\n"
-        "1. Материалдың нақты сипатын анықтаңыз: ол шынайы камера түсірілімі ме, әлде ЖИ (жасанды интеллект), монтаж немесе 3D графика ма?\n"
-        "2. Егер бұл шынайы камера түсірілімі немесе табиғи фотосурет болса, SCORE мәнін 0% мен 15% аралығында қойыңыз (вердикт нақты шынайы деп көрсетілсін).\n"
-        "3. Егер бұл ЖИ арқылы жасалған немесе монтаждалған материал болса, SCORE мәнін 85% мен 100% аралығында қойыңыз.\n\n"
+        "Сіз жоғары санатты цифрлық криминалист-сарапшысыз. Берілген материалға (фото немесе видео кадрларына) ерекше мұқияттылықпен сараптама жасаңыз:\n"
+        "1. Материалды жан-жақты тексеріңіз: бұл таза шынайы камера түсірілімі ме, әлде камера программаларының кіріктірілген фотоэффекттері, сүзгілері (filters), түс коррекциясы, цифрлық ретуш қолданылған ба, жоқ әлде толықтай Жасанды интеллект (ЖИ) пен монтаж арқылы жасалған ба?\n"
+        "2. Егер материалда тек эффектілер немесе жеңіл өңдеу/сүзгілер болса, оны ЖИ деп қате атамай, эффектілер пайызын (мысалы, 30-60%) нақты көрсетіңіз. Егер таза шынайы болса — пайыз өте төмен (0-10%), ал толық ЖИ немесе күрделі монтаж болса — жоғары пайыз (85-100%) көрсетілсін.\n"
+        "3. Дәл пайыздық көрсеткішті (SCORE) және негізделген криминалистикалық сипаттаманы беріңіз.\n\n"
         "МІНДЕТТІ ФОРМАТ:\n"
-        "SCORE: [тек сан, мысалы: 5 немесе 95]\n"
+        "SCORE: [тек сан, мысалы: 10 немесе 90]\n"
         "VERDICT: [Қорытынды сараптамалық вердикт]\n"
-        "REASON: [Толық және нақты дәлелді сипаттама]"
+        "REASON: [Фотоэффекттерді, сүзгілерді, шынайылықты немесе ЖИ белгілерін ескере отырып жасалған толық дәлелді сипаттама]"
     )
     
-    sys_msg = "Сіз цифрлық сарапшысыз."
+    sys_msg = "Сіз цифрлық криминалист-сарапшысыз."
     res_text = call_gemini_chat(sys_msg, [], prompt, pil_imgs=pil_imgs)
     
     score = 10.0
@@ -190,15 +190,6 @@ def analyze_media(pil_imgs):
         verdict = res_text.split("VERDICT:")[1].split("\n")[0].strip()
     if "REASON:" in res_text:
         reason = res_text.split("REASON:")[1].strip()
-
-    # Логикалық сәйкестікті қатаң қадағалау (вердикт пен пайыз қарама-қайшы келмеуі үшін)
-    v_upper = verdict.upper()
-    if any(w in v_upper for w in ["ЖАСАНДЫ", "МОНТАЖ", "ЖИ", "DEEPFAKE", "ГРАФИКА", "3D"]):
-        if score < 50.0:
-            score = 92.0 # Егер ЖИ десе, пайызын міндетті түрде жоғары етеміз
-    else:
-        if score >= 50.0:
-            score = 5.0 # Егер шынайы десе, ЖИ пайызын төмен етеміз
 
     return score, verdict, reason
 
@@ -236,9 +227,9 @@ with tab1:
         verdict = p_data["verdict"]
 
         if pct >= 50.0:
-            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (ЖИ/Монтаж ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (ЖИ / Монтаж ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (Шынайылық көрсеткіші: {100-pct}%, ЖИ ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (Шынайылық көрсеткіші: {100-pct}%, Эффект/Өңдеу деңгейі: {pct}%)</div>', unsafe_allow_html=True)
 
         st.markdown(f"""
         <div class="report-card">
@@ -293,9 +284,9 @@ with tab2:
         verdict = v_data["verdict"]
 
         if pct >= 50.0:
-            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (ЖИ/Монтаж ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="verdict-ai">⚠️ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (ЖИ / Монтаж ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (Шынайылық көрсеткіші: {100-pct}%, ЖИ ықтималдығы: {pct}%)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="verdict-real">✅ САРАПТАМА ҚОРЫТЫНДЫСЫ: {verdict} (Шынайылық көрсеткіші: {100-pct}%, Эффект/Өңдеу деңгейі: {pct}%)</div>', unsafe_allow_html=True)
 
         st.markdown(f"""
         <div class="report-card">
